@@ -789,7 +789,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.WordLength = UART_WORDLENGTH_7B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.Mode = UART_MODE_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
@@ -825,8 +825,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, DO_DRIVER_EN_Pin|DO_DRIVER_DC_CAL_Pin|DO_LED_3_Pin|DO_LED_4_Pin 
                           |DO_LED_5_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : IR_COMP_C_Pin IR_COMP_B_Pin IR_COMP_A_Pin */
-  GPIO_InitStruct.Pin = IR_COMP_C_Pin|IR_COMP_B_Pin|IR_COMP_A_Pin;
+  /*Configure GPIO pins : IR_COMP_C_old_Pin DI_MAIN_BUTTON_Pin DI_DRIVER_PWRGD_Pin */
+  GPIO_InitStruct.Pin = IR_COMP_C_old_Pin|DI_MAIN_BUTTON_Pin|DI_DRIVER_PWRGD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IR_COMP_B_Pin IR_COMP_A_Pin */
+  GPIO_InitStruct.Pin = IR_COMP_B_Pin|IR_COMP_A_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -836,12 +842,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : DI_MAIN_BUTTON_Pin DI_DRIVER_PWRGD_Pin */
-  GPIO_InitStruct.Pin = DI_MAIN_BUTTON_Pin|DI_DRIVER_PWRGD_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DO_DRIVER_EN_Pin DO_DRIVER_DC_CAL_Pin DO_LED_3_Pin DO_LED_4_Pin 
@@ -858,6 +858,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : IR_COMP_C_Pin */
+  GPIO_InitStruct.Pin = IR_COMP_C_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(IR_COMP_C_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

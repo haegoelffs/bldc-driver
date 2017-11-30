@@ -46,12 +46,14 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define IR_COMP_C_Pin GPIO_PIN_14
-#define IR_COMP_C_GPIO_Port GPIOC
+#define IR_COMP_C_old_Pin GPIO_PIN_14
+#define IR_COMP_C_old_GPIO_Port GPIOC
 #define IR_COMP_B_Pin GPIO_PIN_15
 #define IR_COMP_B_GPIO_Port GPIOC
+#define IR_COMP_B_EXTI_IRQn EXTI15_10_IRQn
 #define IR_COMP_A_Pin GPIO_PIN_0
 #define IR_COMP_A_GPIO_Port GPIOC
+#define IR_COMP_A_EXTI_IRQn EXTI0_IRQn
 #define DO_MAIN_SWITCH_Pin GPIO_PIN_2
 #define DO_MAIN_SWITCH_GPIO_Port GPIOC
 #define DI_MAIN_BUTTON_Pin GPIO_PIN_3
@@ -118,6 +120,9 @@
 #define PWM_A_HS_GPIO_Port GPIOB
 #define DI_USER_IN_Pin GPIO_PIN_8
 #define DI_USER_IN_GPIO_Port GPIOB
+#define IR_COMP_C_Pin GPIO_PIN_9
+#define IR_COMP_C_GPIO_Port GPIOB
+#define IR_COMP_C_EXTI_IRQn EXTI9_5_IRQn
 
 /* ########################## Assert Selection ############################## */
 /**

@@ -28,4 +28,8 @@ void startupBLDCDriver();
 void proceedBLDCDriver();
 void shutdownBLDCDriver();
 
+void phaseAComp_interrupt();
+void phaseBComp_interrupt();
+void phaseCComp_interrupt();
+
 #endif /* INC_BLDC_DRIVER_ADAPTER_H_ */

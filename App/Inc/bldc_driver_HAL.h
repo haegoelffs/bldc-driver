@@ -62,21 +62,21 @@ void initComp();
         --> edge = 0: falling edge
         --> edge = 1: rising edge
 **/
-void registerVoltageZeroCrossingListenerPhaseA(void (*listener)(char));
+void registerVoltageZeroCrossingListenerPhaseA(void (*listener)(uint8_t));
 /** Register the handed function as listener which is called when the voltage of the phase B crosses the zero
     Input:
     listener = function with parameter edge.
         --> edge = 0: falling edge
         --> edge = 1: rising edge
 **/
-void registerVoltageZeroCrossingListenerPhaseB(void (*listener)(char));
+void registerVoltageZeroCrossingListenerPhaseB(void (*listener)(uint8_t));
 /** Register the handed function as listener which is called when the voltage of the phase C crosses the zero
     Input:
     listener = function with parameter edge.
         --> edge = 0: falling edge
         --> edge = 1: rising edge
 **/
-void registerVoltageZeroCrossingListenerPhaseC(void (*listener)(char));
+void registerVoltageZeroCrossingListenerPhaseC(void (*listener)(uint8_t));
 
 /** Enables the comperator interrupt for the phase A.
     Input:

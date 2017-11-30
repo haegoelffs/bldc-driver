@@ -30,9 +30,7 @@ static void (*listenerPhaseA)(uint8_t edge);
 static void (*listenerPhaseB)(uint8_t edge);
 static void (*listenerPhaseC)(uint8_t edge);
 
-
-void initBLDCDriver(
-		ADC_HandleTypeDef *pShuntA_hallB_ADC_handle,
+void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle,
 		ADC_HandleTypeDef *pShuntB_ADC_handle,
 		ADC_HandleTypeDef *pHallA_ADC_handle,
 		ADC_HandleTypeDef *pUser_ADC_handle,
@@ -42,8 +40,7 @@ void initBLDCDriver(
 		TIM_HandleTypeDef *pC_LS_PWM_handle,
 		TIM_HandleTypeDef *pA_HS_PWM_handle,
 		TIM_HandleTypeDef *pB_HS_PWM_handle,
-		TIM_HandleTypeDef *pC_HS_PWM_handle,
-		SPI_HandleTypeDef *pSPI_handle,
+		TIM_HandleTypeDef *pC_HS_PWM_handle, SPI_HandleTypeDef *pSPI_handle,
 		UART_HandleTypeDef *pUART_handle) {
 	shuntA_hallB_ADC_handle = *pShuntA_hallB_ADC_handle;
 	shuntB_ADC_handle = *pShuntB_ADC_handle;
@@ -69,7 +66,7 @@ void shutdownBLDCDriver() {
 }
 
 //========================= GPIO'S ===================================
-void initGPIOs(){
+void initGPIOs() {
 }
 // led's
 void switch_PowerLED(uint8_t state) {
@@ -94,72 +91,97 @@ void switch_Enable_BridgeDriver(uint8_t state) {
 void switch_DCCal_BridgeDriver(uint8_t state) {
 	HAL_GPIO_WritePin(DO_DRIVER_DC_CAL_GPIO_Port, DO_DRIVER_DC_CAL_Pin, state);
 }
-uint8_t read_NFault_BridgeDriver(){
+uint8_t read_NFault_BridgeDriver() {
 	return HAL_GPIO_ReadPin(DI_DRIVER_NFAULT_GPIO_Port, DI_DRIVER_NFAULT_Pin);
 }
-uint8_t read_NOCTW_BridgeDriver(){
+uint8_t read_NOCTW_BridgeDriver() {
 	return HAL_GPIO_ReadPin(DI_DRIVER_NOCTW_GPIO_Port, DI_DRIVER_NOCTW_Pin);
 }
-uint8_t read_PWRGD_BridgeDriver(){
+uint8_t read_PWRGD_BridgeDriver() {
 	return HAL_GPIO_ReadPin(DI_DRIVER_PWRGD_GPIO_Port, DI_DRIVER_PWRGD_Pin);
 }
 // main switch
-void switch_MainSwitch(uint8_t state){
+void switch_MainSwitch(uint8_t state) {
 	HAL_GPIO_WritePin(DO_MAIN_SWITCH_GPIO_Port, DO_MAIN_SWITCH_Pin, state);
 }
-uint8_t read_MainButton(){
+uint8_t read_MainButton() {
 	return HAL_GPIO_ReadPin(DI_MAIN_BUTTON_GPIO_Port, DI_MAIN_BUTTON_Pin);
 }
 
 //========================= UART ===================================
-void initUART(){
+void initUART() {
 }
 
-void transmitStringOverUART(uint8_t *pMsg){
+void transmitStringOverUART(uint8_t *pMsg) {
 	// find lenght of string (zero terminated)
 	uint8_t *pTemp = pMsg;
 	uint8_t cnt = 0;
-	while(1){
-		if(*pTemp == 0 || cnt >= 255)
-		{
+	while (1) {
+		if (*pTemp == 0 || cnt >= 255) {
 			// end of string
 			break;
-		}
-		else
-		{
+		} else {
 			// count up pointer to next string element
 			pTemp++;
 			cnt++;
 		}
 	}
 
-	HAL_UART_Transmit(uart_handle, pMsg, cnt, 100);
+	HAL_UART_Transmit(&uart_handle, pMsg, cnt, 100);
 }
-void transmitCharOverUART(char data){
-	HAL_UART_Transmit(uart_handle, &data, 1, 100);
+void transmitCharOverUART(char data) {
+	HAL_UART_Transmit(&uart_handle, &data, 1, 100);
 }
 
 //========================= COMPERATORS ==============================
-void initComp(){
+void initComp() {
 
 }
 
-void registerVoltageZeroCrossingListenerPhaseA(void (*listener)(uint8_t)){
+void registerVoltageZeroCrossingListenerPhaseA(void (*listener)(uint8_t)) {
 	listenerPhaseA = listener;
 }
-void registerVoltageZeroCrossingListenerPhaseB(void (*listener)(uint8_t)){
+void registerVoltageZeroCrossingListenerPhaseB(void (*listener)(uint8_t)) {
 	listenerPhaseB = listener;
 }
-void registerVoltageZeroCrossingListenerPhaseC(void (*listener)(uint8_t)){
+void registerVoltageZeroCrossingListenerPhaseC(void (*listener)(uint8_t)) {
 	listenerPhaseC = listener;
 }
 
-void setEnableCompA(uint8_t enable){
-
+void setEnableCompA(uint8_t enable) {
+	if (enable) {
+		HAL_NVIC_EnableIRQ(IR_COMP_A_EXTI_IRQn);
+	} else {
+		HAL_NVIC_DisableIRQ(IR_COMP_A_EXTI_IRQn);
+	}
 }
-void setEnableCompB(uint8_t enable){
-
+void setEnableCompB(uint8_t enable) {
+	if (enable) {
+		HAL_NVIC_EnableIRQ(IR_COMP_B_EXTI_IRQn);
+	} else {
+		HAL_NVIC_DisableIRQ(IR_COMP_B_EXTI_IRQn);
+	}
 }
-void setEnableCompC(uint8_t enable){
+void setEnableCompC(uint8_t enable) {
+	if (enable) {
+		HAL_NVIC_EnableIRQ(IR_COMP_C_EXTI_IRQn);
+	} else {
+		HAL_NVIC_DisableIRQ(IR_COMP_C_EXTI_IRQn);
+	}
+}
 
+void phaseAComp_interrupt() {
+	if(listenerPhaseA != 0){
+		listenerPhaseA(HAL_GPIO_ReadPin(IR_COMP_A_GPIO_Port, IR_COMP_A_Pin));
+	}
+}
+void phaseBComp_interrupt() {
+	if(listenerPhaseB != 0){
+			listenerPhaseB(HAL_GPIO_ReadPin(IR_COMP_B_GPIO_Port, IR_COMP_B_Pin));
+		}
+}
+void phaseCComp_interrupt() {
+	if(listenerPhaseC != 0){
+			listenerPhaseC(HAL_GPIO_ReadPin(IR_COMP_C_GPIO_Port, IR_COMP_C_Pin));
+		}
 }
