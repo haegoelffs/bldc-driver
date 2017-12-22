@@ -10,26 +10,29 @@
 
 #include "stm32f3xx_hal.h"
 
-void initBLDCDriver(
-		ADC_HandleTypeDef *pShuntA_hallB_ADC_handle,
-		ADC_HandleTypeDef *pShuntB_ADC_handle,
-		ADC_HandleTypeDef *pHallA_ADC_handle,
-		ADC_HandleTypeDef *pUser_ADC_handle,
-		DAC_HandleTypeDef *pVirtZero_DAC_handler,
-		TIM_HandleTypeDef *pA_LS_PWM_handle,
-		TIM_HandleTypeDef *pB_LS_PWM_handle,
-		TIM_HandleTypeDef *pC_LS_PWM_handle,
-		TIM_HandleTypeDef *pA_HS_PWM_handle,
-		TIM_HandleTypeDef *pB_HS_PWM_handle,
-		TIM_HandleTypeDef *pC_HS_PWM_handle,
-		SPI_HandleTypeDef *pSPI_handle,
-		UART_HandleTypeDef *pUART_handle);
+void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
+		ADC_HandleTypeDef *pShuntB_hallA_ADC_handle_param,
+		ADC_HandleTypeDef *pUser_ADC_handle_param,
+		DAC_HandleTypeDef *pVirtZero_DAC_handler_param,
+		TIM_HandleTypeDef *pA_LS_HS_PWM_handle_param,
+		TIM_HandleTypeDef *pB_LS_PWM_handle_param,
+		TIM_HandleTypeDef *pC_LS_HS_PWM_handle_param,
+		TIM_HandleTypeDef *pB_HS_PWM_handle_param,
+		TIM_HandleTypeDef *pCallback_Timer_param,
+		TIM_HandleTypeDef *pSystemtime_Timer_param,
+		SPI_HandleTypeDef *pSPI_handle_param,
+		UART_HandleTypeDef *pUART_handle_param);
+
 void startupBLDCDriver();
 void proceedBLDCDriver();
-void shutdownBLDCDriver();
 
 void phaseAComp_interrupt();
 void phaseBComp_interrupt();
 void phaseCComp_interrupt();
+
+void hallB_shuntA_adc_interrupt();
+void hallA_shuntB_adc_interrupt();
+
+void callbackTimer_interrupt();
 
 #endif /* INC_BLDC_DRIVER_ADAPTER_H_ */

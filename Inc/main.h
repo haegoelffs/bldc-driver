@@ -76,12 +76,12 @@
 #define SPI_MOSI_GPIO_Port GPIOA
 #define DI_DRIVER_PWRGD_Pin GPIO_PIN_4
 #define DI_DRIVER_PWRGD_GPIO_Port GPIOC
-#define ADC_USER_IN_Pin GPIO_PIN_5
-#define ADC_USER_IN_GPIO_Port GPIOC
+#define ADC_USER_IN_old_Pin GPIO_PIN_5
+#define ADC_USER_IN_old_GPIO_Port GPIOC
 #define DI_DRIVER_NOCTW_Pin GPIO_PIN_0
 #define DI_DRIVER_NOCTW_GPIO_Port GPIOB
-#define ADC_SHUNT_B_Pin GPIO_PIN_1
-#define ADC_SHUNT_B_GPIO_Port GPIOB
+#define ADC_SHUNT_B_old_Pin GPIO_PIN_1
+#define ADC_SHUNT_B_old_GPIO_Port GPIOB
 #define DI_DRIVER_NFAULT_Pin GPIO_PIN_2
 #define DI_DRIVER_NFAULT_GPIO_Port GPIOB
 #define UART_TX_Pin GPIO_PIN_10
@@ -90,18 +90,18 @@
 #define UART_RX_GPIO_Port GPIOB
 #define ADC_HALL_A_Pin GPIO_PIN_12
 #define ADC_HALL_A_GPIO_Port GPIOB
-#define UART_CTS_Pin GPIO_PIN_13
-#define UART_CTS_GPIO_Port GPIOB
-#define UART_RTS_Pin GPIO_PIN_14
-#define UART_RTS_GPIO_Port GPIOB
-#define PWM_C_LS_Pin GPIO_PIN_15
-#define PWM_C_LS_GPIO_Port GPIOB
+#define ADC_USER_IN_Pin GPIO_PIN_13
+#define ADC_USER_IN_GPIO_Port GPIOB
+#define ADC_SHUNT_B_Pin GPIO_PIN_14
+#define ADC_SHUNT_B_GPIO_Port GPIOB
+#define PWM_C_LS_old_Pin GPIO_PIN_15
+#define PWM_C_LS_old_GPIO_Port GPIOB
 #define PWM_C_HS_Pin GPIO_PIN_6
 #define PWM_C_HS_GPIO_Port GPIOC
 #define PWM_B_LS_Pin GPIO_PIN_7
 #define PWM_B_LS_GPIO_Port GPIOC
-#define DO_LED_1_Pin GPIO_PIN_8
-#define DO_LED_1_GPIO_Port GPIOC
+#define PWM_C_LS_Pin GPIO_PIN_8
+#define PWM_C_LS_GPIO_Port GPIOC
 #define DO_LED_2_Pin GPIO_PIN_9
 #define DO_LED_2_GPIO_Port GPIOC
 #define DO_LED_3_Pin GPIO_PIN_8
@@ -112,12 +112,16 @@
 #define DO_LED_5_GPIO_Port GPIOA
 #define PWM_B_HS_Pin GPIO_PIN_11
 #define PWM_B_HS_GPIO_Port GPIOA
-#define PWM_A_LS_Pin GPIO_PIN_12
-#define PWM_A_LS_GPIO_Port GPIOA
+#define PWM_A_LS_old_Pin GPIO_PIN_12
+#define PWM_A_LS_old_GPIO_Port GPIOA
 #define SPI_NSS_Pin GPIO_PIN_15
 #define SPI_NSS_GPIO_Port GPIOA
+#define DO_LED_1_Pin GPIO_PIN_10
+#define DO_LED_1_GPIO_Port GPIOC
 #define PWM_A_HS_Pin GPIO_PIN_6
 #define PWM_A_HS_GPIO_Port GPIOB
+#define PWM_A_LS_Pin GPIO_PIN_7
+#define PWM_A_LS_GPIO_Port GPIOB
 #define DI_USER_IN_Pin GPIO_PIN_8
 #define DI_USER_IN_GPIO_Port GPIOB
 #define IR_COMP_C_Pin GPIO_PIN_9
@@ -132,7 +136,12 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
-
+#define PWM_A_HS_channel TIM_CHANNEL_1 // TIM4
+#define PWM_B_HS_channel TIM_CHANNEL_4 // TIM1
+#define PWM_C_HS_channel TIM_CHANNEL_1 // TIM8
+#define PWM_A_LS_channel TIM_CHANNEL_2 // TIM4
+#define PWM_B_LS_channel TIM_CHANNEL_2	// TIM3
+#define PWM_C_LS_channel TIM_CHANNEL_3 // TIM8
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
