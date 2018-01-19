@@ -49,31 +49,86 @@ void debounceStateSwitch() {
 		stateSwitchState = 1;
 	}
 }
-void pollAnalogUserInput(){
-	if(isMeasReady_userVolatgeMeas){
+void pollAnalogUserInput() {
+	if (isMeasReady_userVolatgeMeas) {
 		userInValue = getLastMeas_userVolatgeMeas();
 		start_userVolatgeMeas();
 	}
 }
 
 void initInterfaceService() {
+
 	start_userVolatgeMeas();
+
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+
+	switch_StatusLED4(0);
 }
 
 void proceedInterfaceService() {
 	debounceMainSwitch();
 	debounceStateSwitch();
 	pollAnalogUserInput();
+
+	readOutBridgeDriverPins();
 }
 
-uint8_t getDebouncedMainSwitchState(){
+uint8_t getDebouncedMainSwitchState() {
 	return mainSwitchState;
 }
 
-uint8_t getDebouncedStateSwitchState(){
+uint8_t getDebouncedStateSwitchState() {
 	return stateSwitchState;
 }
 
-uint32_t getUserInValue(){
+uint32_t getUserInValue() {
 	return userInValue;
+}
+
+void flashNextLED() {
+	static uint8_t led = 0;
+
+	switch_StatusLED1(0);
+	switch_StatusLED2(0);
+	switch_StatusLED3(0);
+	switch_StatusLED4(0);
+
+	switch (led) {
+	case 0:
+		switch_StatusLED1(1);
+		break;
+	case 1:
+		switch_StatusLED2(1);
+		break;
+	case 2:
+		switch_StatusLED3(1);
+		break;
+	case 3:
+		switch_StatusLED4(1);
+		break;
+	}
+
+	led = (led + 1) % 4;
+}
+
+void readOutBridgeDriverPins(){
+	// fault report indicator
+	uint8_t nfault = read_NFault_BridgeDriver();
+
+	// overcurrent and over temperature warning
+	uint8_t noctw = read_NOCTW_BridgeDriver();
+
+	// buck output voltage is low
+	uint8_t pwrgd = read_PWRGD_BridgeDriver();
+
+	switch_StatusLED1(!nfault);
+	switch_StatusLED2(!noctw);
+	switch_StatusLED3(!pwrgd);
 }

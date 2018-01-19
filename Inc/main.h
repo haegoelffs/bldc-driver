@@ -54,6 +54,8 @@
 #define IR_COMP_A_Pin GPIO_PIN_0
 #define IR_COMP_A_GPIO_Port GPIOC
 #define IR_COMP_A_EXTI_IRQn EXTI0_IRQn
+#define ADC_MAIN_VOLTAGE_Pin GPIO_PIN_1
+#define ADC_MAIN_VOLTAGE_GPIO_Port GPIOC
 #define DO_MAIN_SWITCH_Pin GPIO_PIN_2
 #define DO_MAIN_SWITCH_GPIO_Port GPIOC
 #define DI_MAIN_BUTTON_Pin GPIO_PIN_3
@@ -114,8 +116,8 @@
 #define PWM_B_HS_GPIO_Port GPIOA
 #define PWM_A_LS_old_Pin GPIO_PIN_12
 #define PWM_A_LS_old_GPIO_Port GPIOA
-#define SPI_NSS_Pin GPIO_PIN_15
-#define SPI_NSS_GPIO_Port GPIOA
+#define DO_SELECT_BRIDGE_DRIVER_Pin GPIO_PIN_15
+#define DO_SELECT_BRIDGE_DRIVER_GPIO_Port GPIOA
 #define DO_LED_1_Pin GPIO_PIN_10
 #define DO_LED_1_GPIO_Port GPIOC
 #define PWM_A_HS_Pin GPIO_PIN_6
@@ -142,6 +144,7 @@
 #define PWM_A_LS_channel TIM_CHANNEL_2 // TIM4
 #define PWM_B_LS_channel TIM_CHANNEL_2	// TIM3
 #define PWM_C_LS_channel TIM_CHANNEL_3 // TIM8
+#define DAC_virtual_GND_channel DAC_CHANNEL_1
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

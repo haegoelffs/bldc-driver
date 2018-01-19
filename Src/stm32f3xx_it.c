@@ -41,6 +41,8 @@
 
 /* External variables --------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
+extern ADC_HandleTypeDef hadc3;
 extern ADC_HandleTypeDef hadc4;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
@@ -208,9 +210,16 @@ void EXTI0_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
-	hallB_shuntA_adc_interrupt();
+	if(__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_EOC) || __HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_EOS)){
+		// end of conversion --> IRQ found
+		callback_ADC_mainPower_IRQ();
+	}else if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC) || __HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOS)){
+		// end of conversion --> IRQ found
+		hallB_shuntA_adc_interrupt();
+	}
   /* USER CODE END ADC1_2_IRQn 0 */
   HAL_ADC_IRQHandler(&hadc1);
+  HAL_ADC_IRQHandler(&hadc2);
   /* USER CODE BEGIN ADC1_2_IRQn 1 */
 
   /* USER CODE END ADC1_2_IRQn 1 */
@@ -270,6 +279,20 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */
+}
+
+/**
+* @brief This function handles ADC3 global interrupt.
+*/
+void ADC3_IRQHandler(void)
+{
+  /* USER CODE BEGIN ADC3_IRQn 0 */
+	callback_ADC_userIn_IRQ();
+  /* USER CODE END ADC3_IRQn 0 */
+  HAL_ADC_IRQHandler(&hadc3);
+  /* USER CODE BEGIN ADC3_IRQn 1 */
+
+  /* USER CODE END ADC3_IRQn 1 */
 }
 
 /**

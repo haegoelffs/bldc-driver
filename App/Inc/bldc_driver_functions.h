@@ -8,6 +8,8 @@
 #ifndef INC_BLDC_DRIVER_FUNCTIONS_H_
 #define INC_BLDC_DRIVER_FUNCTIONS_H_
 
+#include <stdint.h>
+
 //======================= INTERFACE SERVICE ==================================
 void initInterfaceService();
 void proceedInterfaceService();
@@ -17,34 +19,26 @@ uint8_t getDebouncedStateSwitchState();
 uint32_t getUserInValue();
 
 //========================= TIME ===================================
-/** Starts a new time measurement.
-resolution = 1/(16e6/64) = 4us
-max. time = 4us * 2¹⁶ = 262.2ms
-
-Input:
-timerOverflowCallback: called after the max. time
-*/
-void startTimeMeasurement(void (*timerOverflowCallback)(void));
-
-/** Returns a 1, if there is a running time measurement
-*/
-uint8_t isTimeMeasurementRunning();
-
-/** Stops the time measurement and returns the measured time.
- return: measured time in us.
-*/
-uint32_t stopTimeMeasurement();
-
-uint32_t getTime();
+uint32_t getTimestamp();
+uint32_t calculateDeltaTime(uint32_t start_timestamp);
 
 //========================= PHASE CONTROLL ===================================
+void initPhaseControllService();
+
 #define START_SIN_APPROX_FORWARD 0
 #define START_SIN_APPROX_BACKWARD 1
 #define STOP_SIN_APPROX 2
 void control3PhaseSinusApproximation(uint8_t start_stop_selecter);
-void setSinusApproximationPeriod(uint32_t period);
+void setSinusApproximation60DegTime(uint32_t t60Deg);
 
-/** Returns the active state.
+#define SECTION_0_ACTIVE 0
+#define SECTION_1_ACTIVE 1
+#define SECTION_2_ACTIVE 2
+#define SECTION_3_ACTIVE 3
+#define SECTION_4_ACTIVE 4
+#define SECTION_5_ACTIVE 5
+#define NO_SECTION_ACTIVE 6
+/** Returns the active section.
  *  Return:
     state = 0: A heavyside, C lowside
     state = 1: B heavyside, C lowside
@@ -54,7 +48,16 @@ void setSinusApproximationPeriod(uint32_t period);
     state = 5: A heavyside, B lowside
     state > 5: power off all channels
  */
-uint8_t getPhaseState();
+uint8_t getActiveSection();
+
+/** Returns the active phase control state.
+ *  	Return = 0: sinus approximation is running forward
+ *  	Return = 1: sinus approximation is running backward
+ *  	Return = 2: sinus approximation is stopped
+ */
+uint8_t getPhasecontrolState();
+
+void registerSectionChangedListener(void (*pListener)(uint8_t));
 
 //========================= ZERO CROSSING ===================================
 void initZeroCrossingService();
@@ -70,15 +73,14 @@ void initZeroCrossingService();
         --> edge = 0: falling edge
         --> edge = 1: rising edge
 **/
-void registerZeroCrossingListener(void (*listener)(char, char));
+void registerZeroCrossingListener(void (*listener)(uint8_t, uint8_t));
+#define FALLING_EDGE 0
+#define RISING_EDGE 1
+#define PHASE_A 'A'
+#define PHASE_B 'B'
+#define PHASE_C 'C'
 
+void enableZeroCrossingIRQ(uint8_t phase, uint8_t enable);
+void resetFilter();
 
-/** Enables the comperator for the phase A.
-    Input:
-    enable = 1: enable comperator
-    enable = 0: disable comperator
-**/
-void setEnableCompA(char enable);
-void setEnableCompB(char enable);
-void setEnableCompC(char enable);
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */

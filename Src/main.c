@@ -47,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 ADC_HandleTypeDef hadc3;
 ADC_HandleTypeDef hadc4;
 
@@ -83,6 +84,7 @@ static void MX_ADC1_Init(void);
 static void MX_ADC4_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_ADC2_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
@@ -113,6 +115,7 @@ int main(void)
     		  &hadc1,
     		  &hadc4,
     		  &hadc3,
+			  &hadc2,
     		  &hdac1,
     		  &htim4,
     		  &htim3,
@@ -145,6 +148,7 @@ int main(void)
   MX_ADC4_Init();
   MX_ADC3_Init();
   MX_TIM2_Init();
+  MX_ADC2_Init();
 
   /* USER CODE BEGIN 2 */
   startupBLDCDriver();
@@ -281,6 +285,48 @@ static void MX_ADC1_Init(void)
 
 }
 
+/* ADC2 init function */
+static void MX_ADC2_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Common config 
+    */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.LowPowerAutoWait = DISABLE;
+  hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_7;
+  sConfig.Rank = 1;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* ADC3 init function */
 static void MX_ADC3_Init(void)
 {
@@ -407,11 +453,11 @@ static void MX_SPI1_Init(void)
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -686,7 +732,7 @@ static void MX_USART3_UART_Init(void)
 {
 
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 9600;
+  huart3.Init.BaudRate = 115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
@@ -724,7 +770,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, DO_DRIVER_EN_Pin|DO_DRIVER_DC_CAL_Pin|DO_LED_3_Pin|DO_LED_4_Pin 
-                          |DO_LED_5_Pin, GPIO_PIN_RESET);
+                          |DO_LED_5_Pin|DO_SELECT_BRIDGE_DRIVER_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ADC_SHUNT_B_old_GPIO_Port, ADC_SHUNT_B_old_Pin, GPIO_PIN_RESET);
@@ -749,9 +795,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DO_DRIVER_EN_Pin DO_DRIVER_DC_CAL_Pin DO_LED_3_Pin DO_LED_4_Pin 
-                           DO_LED_5_Pin */
+                           DO_LED_5_Pin DO_SELECT_BRIDGE_DRIVER_Pin */
   GPIO_InitStruct.Pin = DO_DRIVER_EN_Pin|DO_DRIVER_DC_CAL_Pin|DO_LED_3_Pin|DO_LED_4_Pin 
-                          |DO_LED_5_Pin;
+                          |DO_LED_5_Pin|DO_SELECT_BRIDGE_DRIVER_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

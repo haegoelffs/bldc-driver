@@ -9,30 +9,10 @@
 #include "bldc_driver_functions.h"
 
 
-/** Starts a new time measurement.
-resolution = 1/(16e6/64) = 4us
-max. time = 4us * 2¹⁶ = 262.2ms
-
-Input:
-timerOverflowCallback: called after the max. time
-*/
-void startTimeMeasurement(void (*timerOverflowCallback)(void)){
-
+uint32_t getTimestamp(){
+	return getSystimeUs();
 }
 
-/** Returns a 1, if there is a running time measurement
-*/
-uint8_t isTimeMeasurementRunning(){
-
-}
-
-/** Stops the time measurement and returns the measured time.
- return: measured time in us.
-*/
-uint32_t stopTimeMeasurement(){
-
-}
-
-uint32_t getTime(){
-
+uint32_t calculateDeltaTime(uint32_t start_timestamp){
+	return getSystimeUs() - start_timestamp;
 }

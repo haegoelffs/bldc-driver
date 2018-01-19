@@ -14,6 +14,7 @@
 static ADC_HandleTypeDef *pShuntA_hallB_ADC_handle;
 static ADC_HandleTypeDef *pShuntB_hallA_ADC_handle;
 static ADC_HandleTypeDef *pUser_ADC_handle;
+static ADC_HandleTypeDef *pMainPower_ADC_handle;
 
 static DAC_HandleTypeDef *pVirtZero_DAC_handler;
 
@@ -41,6 +42,15 @@ static void (*listener_shuntA_hallB_meas)(void);
 uint32_t last_ShuntA_HallB_ADCValue = 0;
 uint32_t last_ShuntB_HallA_ADCValue = 0;
 
+volatile uint32_t last_userIn_ADCValue = 0;
+volatile uint32_t last_mainPower_ADCValue = 0;
+volatile uint8_t newData_userIn_ADCValue_flag = 0;
+volatile uint8_t newData_mainPower_ADCValue_flag = 0;
+
+// spi last datas
+static uint16_t statusRegister1;
+static uint16_t statusRegister2;
+
 // timer callbacks
 static void (*listener_callback_timer)(void);
 static uint32_t delayTimeInUs = 0;
@@ -50,6 +60,7 @@ static uint32_t deltaSystimeInUs = 0;
 void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
 		ADC_HandleTypeDef *pShuntB_hallA_ADC_handle_param,
 		ADC_HandleTypeDef *pUser_ADC_handle_param,
+		ADC_HandleTypeDef *pMainPower_ADC_handle_param,
 		DAC_HandleTypeDef *pVirtZero_DAC_handler_param,
 		TIM_HandleTypeDef *pA_LS_HS_PWM_handle_param,
 		TIM_HandleTypeDef *pB_LS_PWM_handle_param,
@@ -62,6 +73,7 @@ void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
 	pShuntA_hallB_ADC_handle = pShuntA_hallB_ADC_handle_param;
 	pShuntB_hallA_ADC_handle = pShuntB_hallA_ADC_handle_param;
 	pUser_ADC_handle = pUser_ADC_handle_param;
+	pMainPower_ADC_handle = pMainPower_ADC_handle_param;
 	pVirtZero_DAC_handler = pVirtZero_DAC_handler_param;
 	pA_LS_HS_PWM_handle = pA_LS_HS_PWM_handle_param;
 	pB_LS_PWM_handle = pB_LS_PWM_handle_param;
@@ -131,22 +143,22 @@ uint8_t read_StateButton() {
 
 //========================= UART ===================================
 void initUART() {
-	switch_PowerLED(1);
+	/*switch_PowerLED(1);
 
-	switch (HAL_UART_GetState(pUART_handle)) {
-	case HAL_UART_STATE_READY:
-		switch_StatusLED1(1);
-		break;
-	case HAL_UART_STATE_ERROR:
-		switch_StatusLED2(1);
-		break;
-	case HAL_UART_STATE_RESET:
-		switch_StatusLED3(1);
-		break;
-	default:
-		switch_StatusLED4(1);
-		break;
-	}
+	 switch (HAL_UART_GetState(pUART_handle)) {
+	 case HAL_UART_STATE_READY:
+	 switch_StatusLED1(1);
+	 break;
+	 case HAL_UART_STATE_ERROR:
+	 switch_StatusLED2(1);
+	 break;
+	 case HAL_UART_STATE_RESET:
+	 switch_StatusLED3(1);
+	 break;
+	 default:
+	 switch_StatusLED4(1);
+	 break;
+	 }*/
 
 	/*uint8_t aTxBuffer[] = "Hello";
 	 if(HAL_UART_Transmit(&uart_handle, (uint8_t*)aTxBuffer, 5, 5000)!= HAL_OK)
@@ -231,22 +243,22 @@ void phaseCComp_interrupt() {
 
 //========================= ADC ==============================
 void initAnalog() {
-	switch_PowerLED(1);
+	/*switch_PowerLED(1);
 
-	switch (HAL_ADC_GetState(pShuntA_hallB_ADC_handle)) {
-	case HAL_ADC_STATE_READY:
-		switch_StatusLED1(1);
-		break;
-	case HAL_ADC_STATE_ERROR_INTERNAL:
-		switch_StatusLED2(1);
-		break;
-	case HAL_ADC_STATE_RESET:
-		switch_StatusLED3(1);
-		break;
-	default:
-		switch_StatusLED4(1);
-		break;
-	}
+	 switch (HAL_ADC_GetState(pShuntA_hallB_ADC_handle)) {
+	 case HAL_ADC_STATE_READY:
+	 switch_StatusLED1(1);
+	 break;
+	 case HAL_ADC_STATE_ERROR_INTERNAL:
+	 switch_StatusLED2(1);
+	 break;
+	 case HAL_ADC_STATE_RESET:
+	 switch_StatusLED3(1);
+	 break;
+	 default:
+	 switch_StatusLED4(1);
+	 break;
+	 }*/
 }
 
 void registerListener_newMeasData_hallA_shuntB(void (*listener)(void)) {
@@ -289,18 +301,39 @@ uint32_t getLastMeas_phaseBCurrentMeas_hall() {
 // user voltage in
 int8_t start_userVolatgeMeas() {
 	if (isMeasReady_userVolatgeMeas()) {
-		HAL_ADC_Start(pUser_ADC_handle);
+		HAL_ADC_Start_IT(pUser_ADC_handle);
 		return 0;
 	}
 	return -1;
 }
-
 uint32_t getLastMeas_userVolatgeMeas() {
+	newData_userIn_ADCValue_flag = 0;
 	return HAL_ADC_GetValue(pUser_ADC_handle);
 }
-
 uint8_t isMeasReady_userVolatgeMeas() {
 	return (HAL_ADC_GetState(pUser_ADC_handle) && HAL_ADC_STATE_READY);
+}
+uint8_t newDataAvailable_userVolatgeMeas(){
+	return newData_userIn_ADCValue_flag;
+}
+
+// main voltage
+int8_t start_mainVoltageMeas() {
+	if (isMeasReady_mainVolatgeMeas()) {
+		HAL_ADC_Start_IT(pMainPower_ADC_handle);
+		return 0;
+	}
+	return -1;
+}
+uint8_t isMeasReady_mainVolatgeMeas() {
+	return (HAL_ADC_GetState(pMainPower_ADC_handle) && HAL_ADC_STATE_READY);
+}
+uint8_t newDataAvailable_mainVolatgeMeas() {
+	return newData_mainPower_ADCValue_flag;
+}
+uint32_t getLastData_mainVoltageMeas() {
+	newData_mainPower_ADCValue_flag = 0;
+	return last_mainPower_ADCValue;
 }
 
 // interrupts
@@ -319,29 +352,52 @@ void hallA_shuntB_adc_interrupt() {
 	}
 }
 
+void callback_ADC_mainPower_IRQ() {
+	last_mainPower_ADCValue = (HAL_ADC_GetValue(pMainPower_ADC_handle)-940)*1.35;
+	newData_mainPower_ADCValue_flag = 1;
+}
+void callback_ADC_userIn_IRQ() {
+	last_userIn_ADCValue = HAL_ADC_GetValue(pUser_ADC_handle);
+	newData_userIn_ADCValue_flag = 1;
+}
+
+//========================= DAC ======================================
+void enable_virtualGND(uint8_t enable) {
+	if (enable) {
+		HAL_DAC_Start(pVirtZero_DAC_handler, DAC_virtual_GND_channel);
+	} else {
+		HAL_DAC_Stop(pVirtZero_DAC_handler, DAC_virtual_GND_channel);
+	}
+
+}
+void set_virtualGNDValue(uint32_t value) {
+	HAL_DAC_SetValue(pVirtZero_DAC_handler, DAC_virtual_GND_channel,
+			DAC_ALIGN_12B_R, value);
+}
+
 //========================= PWM ===================================
 //sudo picocom --baud 9600  --parity n --databits 8 --flow n -l /dev/ttyUSB0
 void initPWM() {
 	HAL_TIM_StateTypeDef temp = HAL_TIM_PWM_GetState(pC_LS_HS_PWM_handle);
 	switch (temp) {
-		 case HAL_TIM_STATE_RESET:
-		 transmitStringOverUART(
-		 "TIM in reset state (not yet initialized or disabled)");
-		 break;
-		 case HAL_TIM_STATE_ERROR:
-		 transmitStringOverUART("TIM in error state");
-		 break;
-		 case HAL_TIM_STATE_READY:
-		 transmitStringOverUART(
-		 "TIM in ready state (initialized and ready for use)");
-		 break;
-		 case HAL_TIM_STATE_BUSY:
-		 transmitStringOverUART(
-		 "TIM in busy state (an internal process is ongoing)");
-		 break;
-		 case HAL_TIM_STATE_TIMEOUT:
-		 transmitStringOverUART("TIM in timeout state");
-		 break;
+	case HAL_TIM_STATE_RESET:
+		transmitStringOverUART(
+				"TIM in reset state (not yet initialized or disabled)");
+		break;
+	case HAL_TIM_STATE_ERROR:
+		transmitStringOverUART("TIM in error state");
+		break;
+	case HAL_TIM_STATE_READY:
+		transmitStringOverUART(
+				"TIM in ready state (initialized and ready for use)");
+		break;
+	case HAL_TIM_STATE_BUSY:
+		transmitStringOverUART(
+				"TIM in busy state (an internal process is ongoing)");
+		break;
+	case HAL_TIM_STATE_TIMEOUT:
+		transmitStringOverUART("TIM in timeout state");
+		break;
 	}
 
 }
@@ -514,4 +570,122 @@ void callbackTimer_interrupt() {
 			HAL_TIM_Base_Start_IT(pCallback_Timer_handle);
 		}
 	}
+}
+
+//========================= SPI ==================================
+void selectBridgeDriverAsSPISlave(uint8_t enable) {
+	HAL_GPIO_WritePin(DO_SELECT_BRIDGE_DRIVER_GPIO_Port,
+	DO_SELECT_BRIDGE_DRIVER_Pin, !enable);
+}
+
+void initSPI() {
+	selectBridgeDriverAsSPISlave(0);
+}
+void spi_readStatusRegisters_BLOCKING() {
+	// write read status register 1 command
+	// highbyte
+	uint8_t send_data[2];
+	uint8_t receive_data[2];
+
+	// first cycle
+	selectBridgeDriverAsSPISlave(1);
+	HAL_Delay(100);
+
+	send_data[0] = READ_STATUS_REGISTER_1_COMMAND_high;
+	send_data[1] = 0;
+
+	receive_data[0] = 0;
+	receive_data[1] = 0;
+
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(pSPI_handle, send_data,
+			receive_data, 2, 1000);
+
+	switch (status) {
+	case HAL_OK:
+		logDEBUG("spi status: ok");
+		break;
+	case HAL_ERROR:
+		logDEBUG("spi status: error");
+		break;
+	case HAL_BUSY:
+		logDEBUG("spi status: busy");
+		break;
+	case HAL_TIMEOUT:
+		logDEBUG("spi status: timeout");
+		break;
+	}
+	selectBridgeDriverAsSPISlave(0);
+	HAL_Delay(100);
+
+	// second cycle
+	selectBridgeDriverAsSPISlave(1);
+	HAL_Delay(100);
+
+	send_data[0] = READ_STATUS_REGISTER_2_COMMAND_high;
+	send_data[1] = 0;
+
+	receive_data[0] = 0;
+	receive_data[1] = 0;
+
+	status = HAL_SPI_TransmitReceive(pSPI_handle, send_data, receive_data, 2,
+			1000);
+
+	switch (status) {
+	case HAL_OK:
+		logDEBUG("spi status: ok");
+		break;
+	case HAL_ERROR:
+		logDEBUG("spi status: error");
+		break;
+	case HAL_BUSY:
+		logDEBUG("spi status: busy");
+		break;
+	case HAL_TIMEOUT:
+		logDEBUG("spi status: timeout");
+		break;
+	}
+
+	statusRegister1 = receive_data[0] << 8 + receive_data[1];
+
+	selectBridgeDriverAsSPISlave(0);
+	HAL_Delay(100);
+
+	// thirt cycle (receive datas from previous cycle)
+	selectBridgeDriverAsSPISlave(1);
+	HAL_Delay(100);
+
+	send_data[0] = 0;
+	send_data[1] = 0;
+
+	receive_data[0] = 0;
+	receive_data[1] = 0;
+
+	status = HAL_SPI_TransmitReceive(pSPI_handle, send_data, receive_data, 2,
+			1000);
+
+	switch (status) {
+	case HAL_OK:
+		logDEBUG("spi status: ok");
+		break;
+	case HAL_ERROR:
+		logDEBUG("spi status: error");
+		break;
+	case HAL_BUSY:
+		logDEBUG("spi status: busy");
+		break;
+	case HAL_TIMEOUT:
+		logDEBUG("spi status: timeout");
+		break;
+	}
+
+	statusRegister2 = receive_data[0] << 8 + receive_data[1];
+
+	selectBridgeDriverAsSPISlave(0);
+}
+
+uint16_t getLastStatusRegister1Value() {
+	return statusRegister1;
+}
+uint16_t getLastStatusRegister2Value() {
+	return statusRegister2;
 }

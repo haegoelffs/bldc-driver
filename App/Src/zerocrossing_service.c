@@ -7,14 +7,20 @@
 
 #include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
+#include "logger.h"
 
-static uint8_t lastZC_phase = 0;
-static uint8_t lastZC_type = 0; // rising or sinking
+static void (*pListener)(uint8_t, uint8_t);
 
-static void (*listener)(char, char);
+void phaseA_Listener(uint8_t edge);
+void phaseB_Listener(uint8_t edge);
+void phaseC_Listener(uint8_t edge);
 
 void initZeroCrossingService(){
-	//register_comperatorListener_phaseA()
+	logINFO("zero crossing service initialized.");
+
+	register_comperatorListener_phaseA(&phaseA_Listener);
+	register_comperatorListener_phaseB(&phaseB_Listener);
+	register_comperatorListener_phaseC(&phaseC_Listener);
 }
 
 /** Register the handed function as listener which is called when the voltage of one phase crosses zero
@@ -28,22 +34,37 @@ void initZeroCrossingService(){
         --> edge = 0: falling edge
         --> edge = 1: rising edge
 **/
-void registerZeroCrossingListener(void (*listenerParam)(char, char)){
-	listener = listenerParam;
+void registerZeroCrossingListener(void (*pListenerParam)(uint8_t, uint8_t)){
+	pListener = pListenerParam;
 }
 
-
-/** Enables the comperator for the phase A.
-    Input:
-    enable = 1: enable comperator
-    enable = 0: disable comperator
-**/
-void setEnableCompA(char enable){
-
+void resetFilter(){
+	enableCompA(1);
+	enableCompB(1);
+	enableCompC(1);
 }
-void setEnableCompB(char enable){
 
+void enableZeroCrossingIRQ(uint8_t phase, uint8_t enable){
+	switch(phase){
+	case PHASE_A:
+		enableCompA(enable);
+		break;
+	case PHASE_B:
+		enableCompB(enable);
+		break;
+	case PHASE_C:
+		enableCompC(enable);
+		break;
+	}
 }
-void setEnableCompC(char enable){
 
+// zero crossing ISR handler
+void phaseA_Listener(uint8_t edge){
+	pListener(PHASE_A, edge);
+}
+void phaseB_Listener(uint8_t edge){
+	pListener(PHASE_A, edge);
+}
+void phaseC_Listener(uint8_t edge){
+	pListener(PHASE_A, edge);
 }

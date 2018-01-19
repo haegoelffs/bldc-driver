@@ -10,8 +10,9 @@
 
 static uint8_t activeState = STOP_SIN_APPROX;
 static uint8_t phaseState = 6; // power off all
-static uint32_t period = 0;
-static uint32_t sixtyDegTime = 0;
+static uint32_t t60Deg = 0;
+
+void (*pSectionChangedListener)(uint8_t);
 
 /** Changes the output channels for the pwm.
  Input:
@@ -26,6 +27,10 @@ static uint32_t sixtyDegTime = 0;
 void changePhaseState(uint8_t state);
 void switchPhases(uint8_t forward_backward_selecter);
 void timerCallback();
+
+void initPhaseControllService() {
+
+}
 
 void changePhaseState(uint8_t newPhaseState) {
 	enable_PWM_phaseA_HS(0);
@@ -90,24 +95,50 @@ void switchPhases(uint8_t forward_backward_selecter) {
 	default:
 		break;
 	}
+
+	// inform listener
+	if (pSectionChangedListener != 0) {
+		pSectionChangedListener(phaseState);
+	};
 }
 
-void control3PhaseSinusApproximation(uint8_t start_stop_selecter){
-	if(start_stop_selecter != STOP_SIN_APPROX){
-		startAfterUs(sixtyDegTime, &timerCallback);
+void control3PhaseSinusApproximation(uint8_t start_stop_selecter) {
+	// todo: überprüfen parameter (60deg zeit etc.), rückgabe Fehlercode
+	if (start_stop_selecter != STOP_SIN_APPROX && t60Deg != 0) {
+		startAfterUs(t60Deg, &timerCallback);
+	} else {
+		enable_PWM_phaseA_HS(0);
+		enable_PWM_phaseB_HS(0);
+		enable_PWM_phaseC_HS(0);
+		enable_PWM_phaseA_LS(0);
+		enable_PWM_phaseB_LS(0);
+		enable_PWM_phaseC_LS(0);
+
+		phaseState = 6;
 	}
 	activeState = start_stop_selecter;
 }
 
-void setSinusApproximationPeriod(uint32_t periodParam){
-	period = periodParam;
-	sixtyDegTime = periodParam/6;
+void setSinusApproximation60DegTime(uint32_t t60DegParam) {
+	t60Deg = t60DegParam;
 }
 
-void timerCallback(){
-	if(activeState == START_SIN_APPROX_FORWARD ||
-			activeState == START_SIN_APPROX_BACKWARD){
+void timerCallback() {
+	if (activeState == START_SIN_APPROX_FORWARD
+			|| activeState == START_SIN_APPROX_BACKWARD) {
 		switchPhases(activeState);
-		startAfterUs(sixtyDegTime, &timerCallback);
+		startAfterUs(t60Deg, &timerCallback);
 	}
+}
+
+uint8_t getPhasecontrolState() {
+	return activeState;
+}
+
+uint8_t getActiveSection() {
+	return phaseState;
+}
+
+void registerSectionChangedListener(void (*pListener)(uint8_t)) {
+	pSectionChangedListener = pListener;
 }
