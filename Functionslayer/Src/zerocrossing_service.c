@@ -5,8 +5,8 @@
  *      Author: simon
  */
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
+#include "bldc_driver_HAL.h"
 #include "logger.h"
 
 static void (*pListener)(uint8_t, uint8_t);

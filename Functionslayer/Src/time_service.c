@@ -5,8 +5,8 @@
  *      Author: simon
  */
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
+#include "bldc_driver_HAL.h"
 
 
 uint32_t getTimestamp(){

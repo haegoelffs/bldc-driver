@@ -155,7 +155,7 @@ uint32_t getElapsedTimeInUs();
 
 //========================= UART ===================================
 void initUART();
-void transmitStringOverUART(uint8_t *msg);
+void transmitStringOverUART(char *msg);
 
 //========================= SPI ===================================
 // Bridge Driver:

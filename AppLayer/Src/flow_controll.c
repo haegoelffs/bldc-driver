@@ -5,12 +5,11 @@
  *      Author: simon
  */
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
-#include "logger.h"
-
-#include "measurement.h"
+#include "bldc_driver_HAL.h"
 #include "drive.h"
+#include "logger.h"
+#include "measurement.h"
 
 uint8_t started = 0;
 

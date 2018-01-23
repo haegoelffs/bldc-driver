@@ -5,8 +5,8 @@
  *      Author: simon
  */
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
+#include "bldc_driver_HAL.h"
 
 #define DEBOUNCE_HYSTERESIS 10
 

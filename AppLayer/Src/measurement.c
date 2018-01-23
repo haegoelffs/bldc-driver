@@ -5,8 +5,9 @@
  *      Author: simon
  */
 
-#include "bldc_driver_functions.h"
 #include "measurement.h"
+
+#include "bldc_driver_functions.h"
 
 // =============== Defines ===============================================
 #define MAX_ZERO_CROSSINGS 5

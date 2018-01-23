@@ -5,9 +5,11 @@
  *      Author: simon
  */
 
-#include <stdint.h>
-#include "logger.h"
 #include "ringbuffer.h"
+
+#include <stdint.h>
+
+#include "logger.h"
 
 /**StringRingbuffer allocStringRingbuffer(uint16_t bufferSize)
 {

@@ -5,9 +5,10 @@
  *      Author: simon
  */
 
+#include "bldc_driver_HAL.h"
+
 #include "main.h"
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_adapter.h"
 
 // hal handles
@@ -167,7 +168,7 @@ void initUART() {
 	 }*/
 }
 
-void transmitStringOverUART(uint8_t *pMsg) {
+void transmitStringOverUART(char *pMsg) {
 	// find lenght of string (zero terminated)
 	uint8_t *pTemp = pMsg;
 	uint8_t cnt = 0;

@@ -1,5 +1,5 @@
-#include "drive_state.h"
 #include "bldc_driver_functions.h"
+#include "drive_state.h"
 #include "logger.h"
 
 #define GRADIENT_PERCENT_SPEED_UP ((uint8_t)2)

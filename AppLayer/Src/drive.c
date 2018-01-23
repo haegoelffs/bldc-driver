@@ -6,8 +6,9 @@
  */
 
 #include "drive.h"
+
+#include "bldc_driver_functions.h"
 #include "drive_state.h"
-#include "bldc_driver_functions.h" // temp!!! --> weiter abstrahieren!
 
 // =============== Variables =============================================
 DriveState activeState = free_running;

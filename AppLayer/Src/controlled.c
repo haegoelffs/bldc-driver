@@ -1,5 +1,5 @@
-#include "drive_state.h"
 #include "bldc_driver_functions.h"
+#include "drive_state.h"
 
 // =============== Defines ===============================================
 #define MEASURE
@@ -47,7 +47,8 @@ void informRotorPos_controlled(uint32_t rotorpos) {
 
 #ifdef I_CONTROLLER
 	// integrator active
-	static int32_t fault_I += fault;
+	static int32_t fault_I;
+	fault_I += fault;
 	controllerOut += fault_I/I_DIVIDER;
 #endif
 #ifdef D_CONTROLLER

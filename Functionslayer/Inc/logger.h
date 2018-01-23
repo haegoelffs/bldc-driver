@@ -8,6 +8,8 @@
 #ifndef INC_LOGGER_H_
 #define INC_LOGGER_H_
 
+#include <stdint.h>
+
 void logERROR(char *msg);
 void logINFO(char *msg);
 void logDEBUG(char *msg);

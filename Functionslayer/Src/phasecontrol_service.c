@@ -5,8 +5,8 @@
  *      Author: simon
  */
 
-#include "bldc_driver_HAL.h"
 #include "bldc_driver_functions.h"
+#include "bldc_driver_HAL.h"
 
 static uint8_t activeState = STOP_SIN_APPROX;
 static uint8_t phaseState = 6; // power off all

@@ -5,8 +5,8 @@
  *      Author: simon
  */
 
-#include <stdio.h>
 #include "logger.h"
+#include <stdio.h>
 #include "bldc_driver_HAL.h"
 
 #define MAX_SIZE_OF_STRING 255
