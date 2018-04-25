@@ -10,31 +10,23 @@
 
 #include <stdint.h>
 
-#define BUFFER_FAIL     0
-#define BUFFER_SUCCESS  1
-
-#define BUFFER_SIZE 200
-
-typedef struct
-{
-    int16_t data[BUFFER_SIZE][4];
-    unsigned char read; // zeigt auf das Feld mit dem ältesten Inhalt
-    unsigned char write; // zeigt immer auf leeres Feld
-} BufferDriveData;
+#define BUFFER_FAIL 0
+#define BUFFER_SUCCESS 1
+#define BUFFER_EMPTY 2
 
 // source: https://stackoverflow.com/questions/246977/is-using-flexible-array-members-in-c-bad-practice
 typedef struct
 {
     uint16_t next_read;
     uint16_t next_write;
-    uint16_t bufferSize;
-    uint8_t data[];
-} StringRingbuffer;
+    uint16_t capacity;
+    int32_t data[];
+} Ringbuffer;
 
-StringRingbuffer * allocStringRingbuffer(uint16_t bufferSize);
+Ringbuffer * allocRingbuffer(uint32_t bufferSize);
 
-unsigned char bufferIn(BufferDriveData *buffer, int16_t value1, int16_t value2, int16_t value3, int16_t value4);
+uint8_t bufferIn(Ringbuffer *pBuffer, int32_t data);
 
-unsigned char bufferOut(BufferDriveData *buffer, int16_t *pValue1, int16_t *pValue2, int16_t *pValue3, int16_t *pValue4);
+uint8_t bufferOut(Ringbuffer *pBuffer, int32_t *pData);
 
 #endif /* INC_RINGBUFFER_H_ */

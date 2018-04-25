@@ -12,7 +12,10 @@
 
 void initMeasurement();
 
-void register_newRotorPos_listener_ISR(void (*listener)(uint32_t));
+void register_rotorPosMeas_listener_ISR(
+		void (*pNewMeasListener)(uint32_t),
+		void (*pRotorTooEarlyListener)(void),
+		void (*pRotorTooLateListener)(void));
 void register_tooManyZeroCrossings_listener_ISR(void (*listener)(void));
 
 #endif /* INC_MEASUREMENT_H_ */

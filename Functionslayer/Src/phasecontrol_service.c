@@ -7,12 +7,14 @@
 
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
+#include "bufferedLogger.h"
 
 static uint8_t activeState = STOP_SIN_APPROX;
 static uint8_t phaseState = 6; // power off all
 static uint32_t t60Deg = 0;
 
-void (*pSectionChangedListener)(uint8_t);
+void (*pSectionChangedListener)(uint8_t oldSection, uint8_t newSection);
+void (*pSectionEndsListener)(uint8_t section);
 
 /** Changes the output channels for the pwm.
  Input:
@@ -29,7 +31,7 @@ void switchPhases(uint8_t forward_backward_selecter);
 void timerCallback();
 
 void initPhaseControllService() {
-
+	log_msg("phasencontrol service initialized.");
 }
 
 void changePhaseState(uint8_t newPhaseState) {
@@ -80,6 +82,12 @@ void changePhaseState(uint8_t newPhaseState) {
 
 void switchPhases(uint8_t forward_backward_selecter) {
 	static uint8_t phasestate;
+	uint8_t oldPhasestate = phasestate;
+
+	// inform listener
+	if(pSectionEndsListener != 0){
+		pSectionEndsListener(phasestate);
+	}
 
 	switch (forward_backward_selecter) {
 	case START_SIN_APPROX_FORWARD:
@@ -98,7 +106,7 @@ void switchPhases(uint8_t forward_backward_selecter) {
 
 	// inform listener
 	if (pSectionChangedListener != 0) {
-		pSectionChangedListener(phaseState);
+		pSectionChangedListener(phaseState, oldPhasestate);
 	};
 }
 
@@ -131,6 +139,11 @@ void timerCallback() {
 	}
 }
 
+// getters
+uint32_t getSinusApproximation60DegTime(){
+	return t60Deg;
+}
+
 uint8_t getPhasecontrolState() {
 	return activeState;
 }
@@ -139,6 +152,11 @@ uint8_t getActiveSection() {
 	return phaseState;
 }
 
-void registerSectionChangedListener(void (*pListener)(uint8_t)) {
+// register listeners
+void registerSectionChangedListener(void (*pListener)(uint8_t oldSection, uint8_t newSection)) {
 	pSectionChangedListener = pListener;
+}
+
+void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section)){
+	pSectionEndsListener = pListener;
 }

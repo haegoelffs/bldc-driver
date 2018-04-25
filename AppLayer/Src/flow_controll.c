@@ -9,6 +9,7 @@
 #include "bldc_driver_HAL.h"
 #include "drive.h"
 #include "logger.h"
+#include "bufferedLogger.h"
 #include "measurement.h"
 
 uint8_t started = 0;
@@ -35,11 +36,13 @@ void startup() {
 
 	// init hardware
 	initUART();
-	logINFO("Startup BLDC driver...");
+	initBufferedLogger();
+
+	log_msg("Startup BLDC driver...");
 	initSystime();
-	logINFO("Systime initalized.");
+	log_msg("Systime initalized.");
 	initAnalog();
-	logINFO("ADC initalized.");
+	log_msg("ADC initalized.");
 
 
 	// init services
@@ -50,34 +53,35 @@ void startup() {
 	// init rest of software
 	initDrive();
 	initMeasurement();
-	register_newRotorPos_listener_ISR(&inform_newRotorPos);
+
+	register_rotorPosMeas_listener_ISR(&inform_newRotorPos,
+			&informRotorTooEarly,
+			&informRotorTooLate);
 	register_tooManyZeroCrossings_listener_ISR(&handle_measurementERROR_ISR);
 
 	switch_Enable_BridgeDriver(1);
 
-	spi_readStatusRegisters_BLOCKING();
+	/*spi_readStatusRegisters_BLOCKING();
 
 	uint16_t reg1 = getLastStatusRegister1Value();
 	logUnsignedDEBUG("reg1", reg1);
 	uint16_t reg2 = getLastStatusRegister1Value();
-	logUnsignedDEBUG("reg2", reg2);
+	logUnsignedDEBUG("reg2", reg2);*/
 
-	set_PWM_DutyCycle(1300);
+	set_PWM_DutyCycle(1100);
 	changeState(start_up);
-
-	//register_comperatorListener_phaseA(&comp_IRS);
-	//enableCompA(1);
-
-	//setSinusApproximation60DegTime(20000);
-	//control3PhaseSinusApproximation(START_SIN_APPROX_FORWARD);
-
-	//enable_PWM_phaseC_LS(1);
-	//enable_PWM_phaseB_HS(1);
 }
 
 void proceed() {
+	// handle invalid startup
 	if (!started) {
 		return;
+	}
+
+	// measure last cycletime
+	uint32_t timestamp = getTimestamp();
+	if(timestamp != 0){
+		log_maxCycleTimeStatistics(1000000, calculateDeltaTime(timestamp));
 	}
 
 	/*start_mainVoltageMeas();
@@ -95,6 +99,8 @@ void proceed() {
 		uint32_t voltage = getLastMeas_userVolatgeMeas();
 		logUnsignedDEBUG("user voltage", voltage);
 	}*/
+
+	log_writeBuffered();
 
 	proceedDrive();
 	proceedInterfaceService();

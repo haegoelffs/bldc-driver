@@ -20,5 +20,7 @@ void stopStartUp();
 void startControlled(uint32_t time60deg_init, void (*tooSlowCallback)(void));
 void stopControlled(void);
 void informRotorPos_controlled(uint32_t rotorpos);
+void informRotorTooEarly_controlled();
+void informRotorTooLate_controlled();
 
 #endif /* INC_DRIVE_STATE_H_ */

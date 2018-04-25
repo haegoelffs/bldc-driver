@@ -9,6 +9,7 @@
 
 #include "bldc_driver_functions.h"
 #include "drive_state.h"
+#include "bufferedLogger.h"
 
 // =============== Variables =============================================
 DriveState activeState = free_running;
@@ -23,7 +24,7 @@ void handle_freeRunningStoped_callback();
 
 // =============== Functions =============================================
 void initDrive(){
-	logDEBUG("init drive...");
+	log_msg("init drive...");
 	startFreeRunning(&handle_freeRunningStoped_callback);
 }
 void proceedDrive(){
@@ -54,6 +55,33 @@ void inform_newRotorPos(uint32_t time){
 			break;
 		}
 }
+void informRotorTooEarly(){
+	switch(activeState){
+			case start_up:
+				break;
+			case free_running:
+				break;
+			case controlled_negative_torque:
+				break;
+			case controlled_positive_torque:
+				informRotorTooEarly_controlled();
+				break;
+			}
+}
+void informRotorTooLate(){
+	switch(activeState){
+			case start_up:
+				break;
+			case free_running:
+				break;
+			case controlled_negative_torque:
+				break;
+			case controlled_positive_torque:
+				informRotorTooLate_controlled();
+				break;
+			}
+}
+
 void inform_newRotationDirection(uint8_t direction){
 
 }
@@ -73,13 +101,17 @@ void inform_tooManyZeroCrossings(){
 void changeState(DriveState newState){
 	switch(activeState){
 	case start_up:
+		log_msg("start up state active");
 		break;
 	case free_running:
+		log_msg("free running state active");
 		stopFreeRunning();
 		break;
 	case controlled_negative_torque:
+		log_msg("controlled negative torque state active");
 		break;
 	case controlled_positive_torque:
+		log_msg("controlled positive torque state active");
 		stopControlled();
 		break;
 	}
@@ -91,7 +123,7 @@ void handle_startUpStoped_callback(uint32_t time60deg){
 	activeState = controlled_positive_torque;
 	startControlled(time60deg, &handle_controlledStoped_callback);
 }
-void handle_controlledStoped_callback(uint32_t lastTime60deg){
+void handle_controlledStoped_callback(){
 
 }
 void handle_freeRunningStoped_callback(){

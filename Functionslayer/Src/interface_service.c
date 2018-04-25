@@ -56,30 +56,6 @@ void pollAnalogUserInput() {
 	}
 }
 
-void initInterfaceService() {
-
-	start_userVolatgeMeas();
-
-	flashNextLED();
-	HAL_Delay(100);
-	flashNextLED();
-	HAL_Delay(100);
-	flashNextLED();
-	HAL_Delay(100);
-	flashNextLED();
-	HAL_Delay(100);
-
-	switch_StatusLED4(0);
-}
-
-void proceedInterfaceService() {
-	debounceMainSwitch();
-	debounceStateSwitch();
-	pollAnalogUserInput();
-
-	readOutBridgeDriverPins();
-}
-
 uint8_t getDebouncedMainSwitchState() {
 	return mainSwitchState;
 }
@@ -131,4 +107,28 @@ void readOutBridgeDriverPins(){
 	switch_StatusLED1(!nfault);
 	switch_StatusLED2(!noctw);
 	switch_StatusLED3(!pwrgd);
+}
+
+void proceedInterfaceService() {
+	debounceMainSwitch();
+	debounceStateSwitch();
+	pollAnalogUserInput();
+
+	readOutBridgeDriverPins();
+}
+
+void initInterfaceService() {
+
+	start_userVolatgeMeas();
+
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+	flashNextLED();
+	HAL_Delay(100);
+
+	switch_StatusLED4(0);
 }

@@ -14,6 +14,9 @@ void initDrive();
 void proceedDrive();
 
 void inform_newRotorPos(uint32_t time);
+void informRotorTooEarly();
+void informRotorTooLate();
+
 void inform_newRotationDirection(uint8_t direction);
 void inform_tooManyZeroCrossings();
 

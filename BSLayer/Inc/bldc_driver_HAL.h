@@ -118,6 +118,10 @@ void enableCompB(uint8_t enable);
 **/
 void enableCompC(uint8_t enable);
 
+uint8_t read_signal_compA();
+uint8_t read_signal_compB();
+uint8_t read_signal_compC();
+
 //========================= GPIO'S ===================================
 void initGPIOs();
 
@@ -155,6 +159,7 @@ uint32_t getElapsedTimeInUs();
 
 //========================= UART ===================================
 void initUART();
+void transmitCharOverUART(char data);
 void transmitStringOverUART(char *msg);
 
 //========================= SPI ===================================

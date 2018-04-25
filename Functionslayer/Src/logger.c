@@ -7,6 +7,7 @@
 
 #include "logger.h"
 #include <stdio.h>
+#include <string.h>
 #include "bldc_driver_HAL.h"
 
 #define MAX_SIZE_OF_STRING 255
@@ -92,7 +93,6 @@ void logMsg(char* msg) {
 }
 
 void logMsgLn(char *msg) {
-	logTimestamp();
 	transmitStringOverUART(msg);
 	writeNewLine();
 }

@@ -30,6 +30,7 @@ void initPhaseControllService();
 #define STOP_SIN_APPROX 2
 void control3PhaseSinusApproximation(uint8_t start_stop_selecter);
 void setSinusApproximation60DegTime(uint32_t t60Deg);
+uint32_t getSinusApproximation60DegTime();
 
 #define SECTION_0_ACTIVE 0
 #define SECTION_1_ACTIVE 1
@@ -57,7 +58,8 @@ uint8_t getActiveSection();
  */
 uint8_t getPhasecontrolState();
 
-void registerSectionChangedListener(void (*pListener)(uint8_t));
+void registerSectionChangedListener(void (*pListener)(uint8_t oldSection, uint8_t newSection));
+void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section));
 
 //========================= ZERO CROSSING ===================================
 void initZeroCrossingService();
@@ -74,13 +76,17 @@ void initZeroCrossingService();
         --> edge = 1: rising edge
 **/
 void registerZeroCrossingListener(void (*listener)(uint8_t, uint8_t));
-#define FALLING_EDGE 0
-#define RISING_EDGE 1
+#define FALLING_EDGE ZERO_CROSSING_SIGNAL_LOW
+#define RISING_EDGE ZERO_CROSSING_SIGNAL_HIGH
+#define ZERO_CROSSING_SIGNAL_LOW 0
+#define ZERO_CROSSING_SIGNAL_HIGH 1
 #define PHASE_A 'A'
 #define PHASE_B 'B'
 #define PHASE_C 'C'
 
 void enableZeroCrossingIRQ(uint8_t phase, uint8_t enable);
 void resetFilter();
+
+uint8_t readStatusOfZeroCrossingSignal(uint8_t phase);
 
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */

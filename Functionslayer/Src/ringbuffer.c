@@ -5,47 +5,48 @@
  *      Author: simon
  */
 
-#include "ringbuffer.h"
-
 #include <stdint.h>
+#include <stdlib.h>
 
+#include "ringbuffer.h"
 #include "logger.h"
 
-/**StringRingbuffer allocStringRingbuffer(uint16_t bufferSize)
-{
-    StringRingbuffer *p;
-    p = malloc(sizeof(*p) + bufferSize + 1); // alloc more space for the array (last position in struct)
-    p->bufferSize = bufferSize;
+Ringbuffer* allocRingbuffer(uint32_t bufferSize) {
+	Ringbuffer *p;
+	p = malloc(sizeof(*p) + bufferSize + 1); // alloc more space for the array (last position in struct)
+	p->capacity = bufferSize;
+	p->next_read = 0;
+	p->next_write = 0;
+
+	return p;
 }
 
-unsigned char bufferIn(uint16_t byte)
-{
-    if((buffer.write + 1)%BUFFER_SIZE == buffer.read)
-    {
-        // buffer full
-        return BUFFER_FAIL;
-    }
+unsigned char bufferIn(Ringbuffer *pBuffer, int32_t data) {
+	int after_next_write = (pBuffer->next_write + 1) % pBuffer->capacity;
 
-    // write data in array
-    buffer.data[buffer.write] = byte;
+	if (after_next_write == pBuffer->next_read) {
+		return BUFFER_FAIL;
+	}
 
-    // increase write pointer
-    buffer.write = (buffer.write + 1)%BUFFER_SIZE;
+	// write data in array
+	pBuffer->data[pBuffer->next_write] = data;
 
-    return BUFFER_SUCCESS;
+	// increase write pointer
+	pBuffer->next_write = after_next_write;
+
+	return BUFFER_SUCCESS;
 }
 
-unsigned char bufferOut(uint16_t *pByte)
-{
-    if (buffer.read == buffer.write)
-    {
-        // no element
-        return BUFFER_FAIL;
-    }
+uint8_t bufferOut(Ringbuffer *pBuffer, int32_t *pData) {
+	if (pBuffer->next_write == pBuffer->next_read) {
+		return BUFFER_EMPTY;
+	}
 
-    *pByte = buffer.data[buffer.read];
+	*pData = pBuffer->data[pBuffer->next_read];
 
-    buffer.read = (buffer.read + 1)%BUFFER_SIZE;
+	pBuffer->data[pBuffer->next_read] = 0;
 
-    return BUFFER_SUCCESS;
-}*/
+	pBuffer->next_read = (pBuffer->next_read + 1) % pBuffer->capacity;
+
+	return BUFFER_SUCCESS;
+}

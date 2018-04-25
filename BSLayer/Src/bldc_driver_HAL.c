@@ -225,21 +225,30 @@ void enableCompC(uint8_t enable) {
 	}
 }
 
-// interrupts
 void phaseAComp_interrupt() {
 	if (listenerPhaseA != 0) {
-		listenerPhaseA(HAL_GPIO_ReadPin(IR_COMP_A_GPIO_Port, IR_COMP_A_Pin));
+		listenerPhaseA(read_signal_compA());
 	}
 }
 void phaseBComp_interrupt() {
 	if (listenerPhaseB != 0) {
-		listenerPhaseB(HAL_GPIO_ReadPin(IR_COMP_B_GPIO_Port, IR_COMP_B_Pin));
+		listenerPhaseB(read_signal_compB());
 	}
 }
 void phaseCComp_interrupt() {
 	if (listenerPhaseC != 0) {
-		listenerPhaseC(HAL_GPIO_ReadPin(IR_COMP_C_GPIO_Port, IR_COMP_C_Pin));
+		listenerPhaseC(read_signal_compC());
 	}
+}
+
+uint8_t read_signal_compA(){
+	return HAL_GPIO_ReadPin(IR_COMP_A_GPIO_Port, IR_COMP_A_Pin);
+}
+uint8_t read_signal_compB(){
+	return HAL_GPIO_ReadPin(IR_COMP_B_GPIO_Port, IR_COMP_B_Pin);
+}
+uint8_t read_signal_compC(){
+	return HAL_GPIO_ReadPin(IR_COMP_C_GPIO_Port, IR_COMP_C_Pin);
 }
 
 //========================= ADC ==============================

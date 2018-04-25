@@ -1,6 +1,6 @@
 #include "bldc_driver_functions.h"
 #include "drive_state.h"
-#include "logger.h"
+#include "bufferedLogger.h"
 
 #define GRADIENT_PERCENT_SPEED_UP ((uint8_t)2)
 #define GRADIENT_DIVIDER 128
@@ -36,6 +36,8 @@ void proceedStartUp() {
 	time60deg = (TIME_60DEG_SPEED_UP_START
 				- deltaTime/GRADIENT_DIVIDER);
 	setSinusApproximation60DegTime(time60deg);
+
+	log_time60Deg(time60deg);
 
 	if (time60deg < TIME_60DEG_SPEED_UP_END || !isActive) {
 		callback(time60deg);
