@@ -226,9 +226,11 @@ void enableCompC(uint8_t enable) {
 }
 
 void phaseAComp_interrupt() {
+	switch_StatusLED4(1);
 	if (listenerPhaseA != 0) {
 		listenerPhaseA(read_signal_compA());
 	}
+	switch_StatusLED4(0);
 }
 void phaseBComp_interrupt() {
 	if (listenerPhaseB != 0) {

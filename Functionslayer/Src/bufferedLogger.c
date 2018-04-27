@@ -43,6 +43,8 @@
 
 #define NAME_CYCLE_TIME 'G'
 
+#define ZERO_CROSSINGS 'H'
+
 // =============== Variables =============================================
 Ringbuffer *pRingbuffer;
 
@@ -182,15 +184,40 @@ void log_controllerParameterTuple(uint32_t t60Deg, uint32_t rotorpos, uint32_t r
 #endif
 }
 
-void log_controllerParameterTuple_mr(uint32_t max_resolution_us, uint32_t t60Deg, uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out){
+void log_controllerParameterTuple_mr(uint32_t nrIgnoredCalls, uint32_t t60Deg, uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out){
 #ifdef LOG_CONTROLLER_PARAMETER_TUPLE
-	static uint32_t last_timestamp_us;
-	uint32_t timestamp_us = getElapsedTimeInUs();
-	if((timestamp_us - last_timestamp_us) >= max_resolution_us){
-		last_timestamp_us = timestamp_us;
+	static uint32_t cnt;
+	cnt++;
+	if(cnt >= nrIgnoredCalls){
 		log_controllerParameterTuple(t60Deg, rotorpos, rotorpos_setpoint, controller_out);
+		cnt = 0;
 	}
 #endif
+}
+
+void log_zeroCrossings(uint32_t buffer[]){
+	bufferIn(pRingbuffer, (uint32_t) STX);
+	addUnsignedToRingbuffer(getTimestamp());
+	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	bufferIn(pRingbuffer, (uint32_t) ZERO_CROSSINGS);
+	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
+	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+
+	uint32_t cnt = 0;
+	while(1){
+		if(buffer[cnt] != 0){
+			addUnsignedToRingbuffer(buffer[cnt]);
+			bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+			buffer[cnt] = 0;
+			cnt++;
+		}else{
+			break;
+		}
+	}
+
+	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	bufferIn(pRingbuffer, (uint32_t) ETX);
 }
 
 void log_writeBuffered() {

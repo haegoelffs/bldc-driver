@@ -64,6 +64,10 @@ void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section));
 //========================= ZERO CROSSING ===================================
 void initZeroCrossingService();
 
+void registerlistener_zeroCrossing_phaseA(void (*listener)(volatile uint8_t));
+void registerlistener_zeroCrossing_phaseB(void (*listener)(volatile uint8_t));
+void registerlistener_zeroCrossing_phaseC(void (*listener)(volatile uint8_t));
+
 /** Register the handed function as listener which is called when the voltage of one phase crosses zero
     Input:
     listener = function with parameter.

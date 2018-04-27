@@ -33,6 +33,7 @@ void proceedDrive(){
 			proceedStartUp();
 			break;
 		case free_running:
+			//proceedFreeRunning();
 			stopFreeRunning();
 			break;
 		case controlled_negative_torque:

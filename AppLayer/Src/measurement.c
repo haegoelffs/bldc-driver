@@ -8,6 +8,8 @@
 #include "measurement.h"
 
 #include "bldc_driver_functions.h"
+#include "bldc_driver_HAL.h"
+#include "bufferedLogger.h"
 
 // =============== Defines ===============================================
 #define MAX_ZERO_CROSSINGS 5
@@ -16,6 +18,8 @@
 static uint8_t zeroCrossingCounter = 0;
 static uint32_t zeroCrossingTimestamp = 0;
 
+static uint32_t zeroCrossings[200];
+
 // =============== Function pointers =====================================
 void (*pNewRotorPositionMeasurement_listener_ISR)(uint32_t);
 void (*pRotorTooEarlyForMeas_listener_ISR)(void);
@@ -23,13 +27,25 @@ void (*pRotorTooLateForMeas_listener_ISR)(void);
 void (*pTooManyZeroCrossings_listener_ISR)(void);
 
 // =============== Function declarations =================================
-void handleZeroCrossing(uint8_t phase, uint8_t edge);
 void handle_sectionEnds(uint8_t section);
+
+void handle_zeroCrossing_phaseA(volatile uint8_t edge);
+void handle_zeroCrossing_phaseB(volatile uint8_t edge);
+void handle_zeroCrossing_phaseC(volatile uint8_t edge);
 
 // =============== Functions =============================================
 void initMeasurement() {
-	registerZeroCrossingListener(&handleZeroCrossing);
+	//registerZeroCrossingListener(&handleZeroCrossing);
 	registerListener_sectionEnds_ISR(&handle_sectionEnds);
+
+	registerlistener_zeroCrossing_phaseA(&handle_zeroCrossing_phaseA);
+	registerlistener_zeroCrossing_phaseA(&handle_zeroCrossing_phaseB);
+	registerlistener_zeroCrossing_phaseA(&handle_zeroCrossing_phaseC);
+
+	uint32_t cnt;
+	for(cnt = 0; cnt < 200; cnt++){
+		zeroCrossings[cnt] = 0;
+	}
 }
 
 void register_rotorPosMeas_listener_ISR(
@@ -61,48 +77,105 @@ void classifyMeasurement(uint8_t phase, uint8_t rightSignalStatus) {
 }
 
 // listeners
-void handleZeroCrossing(uint8_t phase, uint8_t edge) {
-	switch (getActiveSection()) {
+void handle_zeroCrossing_phaseA(volatile uint8_t edge){
+	volatile uint8_t section = getActiveSection();
+
+		switch (section) {
+		case SECTION_0_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_1_ACTIVE:
+			if (edge == FALLING_EDGE) {
+				zeroCrossingTimestamp = getTimestamp();
+				zeroCrossings[zeroCrossingCounter] = zeroCrossingTimestamp;
+				zeroCrossingCounter++;
+			}
+			break;
+		case SECTION_2_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_3_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_4_ACTIVE:
+			if (edge == RISING_EDGE) {
+				zeroCrossingTimestamp = getTimestamp();
+				zeroCrossingCounter++;
+			}
+			break;
+		case SECTION_5_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		default:
+			// invalid zerocrossing --> do nothing
+			break;
+		}
+}
+void handle_zeroCrossing_phaseB(volatile uint8_t edge){
+	volatile uint8_t section = getActiveSection();
+
+	switch (section) {
 	case SECTION_0_ACTIVE:
-		if (phase == PHASE_B && edge == RISING_EDGE) {
+		if (edge == RISING_EDGE) {
 			zeroCrossingTimestamp = getTimestamp();
 			zeroCrossingCounter++;
 		}
 		break;
 	case SECTION_1_ACTIVE:
-		if (phase == PHASE_A && edge == FALLING_EDGE) {
-			zeroCrossingTimestamp = getTimestamp();
-			zeroCrossingCounter++;
-		}
+		// invalid zerocrossing --> do nothing
 		break;
 	case SECTION_2_ACTIVE:
-		if (phase == PHASE_C && edge == RISING_EDGE) {
-			zeroCrossingTimestamp = getTimestamp();
-			zeroCrossingCounter++;
-		}
+		// invalid zerocrossing --> do nothing
 		break;
 	case SECTION_3_ACTIVE:
-		if (phase == PHASE_B && edge == FALLING_EDGE) {
+		if (edge == FALLING_EDGE) {
 			zeroCrossingTimestamp = getTimestamp();
 			zeroCrossingCounter++;
 		}
 		break;
 	case SECTION_4_ACTIVE:
-		if (phase == PHASE_A && edge == RISING_EDGE) {
-			zeroCrossingTimestamp = getTimestamp();
-			zeroCrossingCounter++;
-		}
+		// invalid zerocrossing --> do nothing
 		break;
 	case SECTION_5_ACTIVE:
-		if (phase == PHASE_C && edge == FALLING_EDGE) {
-			zeroCrossingTimestamp = getTimestamp();
-			zeroCrossingCounter++;
-		}
+		// invalid zerocrossing --> do nothing
 		break;
 	default:
-		// run synchronisation
+		// invalid zerocrossing --> do nothing
 		break;
 	}
+}
+void handle_zeroCrossing_phaseC(volatile uint8_t edge){
+	volatile uint8_t section = getActiveSection();
+
+		switch (section) {
+		case SECTION_0_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_1_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_2_ACTIVE:
+			if (edge == RISING_EDGE) {
+				zeroCrossingTimestamp = getTimestamp();
+				zeroCrossingCounter++;
+			}
+			break;
+		case SECTION_3_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_4_ACTIVE:
+			// invalid zerocrossing --> do nothing
+			break;
+		case SECTION_5_ACTIVE:
+			if (edge == FALLING_EDGE) {
+				zeroCrossingTimestamp = getTimestamp();
+				zeroCrossingCounter++;
+			}
+			break;
+		default:
+			// invalid zerocrossing --> do nothing
+			break;
+		}
 }
 
 void handle_sectionEnds(uint8_t section) {
@@ -112,12 +185,16 @@ void handle_sectionEnds(uint8_t section) {
 			pTooManyZeroCrossings_listener_ISR();
 		}
 
+		log_zeroCrossings(zeroCrossings);
+
 		switch (section) {
 		case SECTION_0_ACTIVE:
 			classifyMeasurement(PHASE_B, ZERO_CROSSING_SIGNAL_HIGH);
+			switch_StatusLED1(1);
 			break;
 		case SECTION_1_ACTIVE:
 			classifyMeasurement(PHASE_A, ZERO_CROSSING_SIGNAL_LOW);
+			switch_StatusLED1(0);
 			break;
 		case SECTION_2_ACTIVE:
 			classifyMeasurement(PHASE_C, ZERO_CROSSING_SIGNAL_HIGH);

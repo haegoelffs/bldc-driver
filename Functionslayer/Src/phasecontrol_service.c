@@ -10,7 +10,7 @@
 #include "bufferedLogger.h"
 
 static uint8_t activeState = STOP_SIN_APPROX;
-static uint8_t phaseState = 6; // power off all
+static volatile uint8_t phaseState = 6; // power off all
 static uint32_t t60Deg = 0;
 
 void (*pSectionChangedListener)(uint8_t oldSection, uint8_t newSection);
@@ -105,9 +105,9 @@ void switchPhases(uint8_t forward_backward_selecter) {
 	}
 
 	// inform listener
-	if (pSectionChangedListener != 0) {
+	/*if (pSectionChangedListener != 0) {
 		pSectionChangedListener(phaseState, oldPhasestate);
-	};
+	};*/
 }
 
 void control3PhaseSinusApproximation(uint8_t start_stop_selecter) {

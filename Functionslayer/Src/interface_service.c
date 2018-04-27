@@ -113,8 +113,6 @@ void proceedInterfaceService() {
 	debounceMainSwitch();
 	debounceStateSwitch();
 	pollAnalogUserInput();
-
-	readOutBridgeDriverPins();
 }
 
 void initInterfaceService() {

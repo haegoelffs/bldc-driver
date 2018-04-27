@@ -10,24 +10,23 @@
 #define MAX_T_60_DEG 5000
 
 // _controller options____________________________________________________
-#define P_DIVIDER 128
+#define P_DIVIDER 32
 //#define P_DIVIDER 200
 //#define P_DIVIDER 128
 
 #define I_CONTROLLER
-#define I_DIVIDER 65536
+#define I_DIVIDER 32768
 
 //#define D_CONTROLLER
 #define D_DIVIDER 16
 
 // =============== Variables =============================================
-static uint32_t time60deg;
+static volatile uint32_t time60deg;
 
 // =============== Function pointers =====================================
 static void (*tooSlow_stopped_callback)(void);
 
 // =============== Function declarations =================================
-void poceedController(uint32_t rotorpos);
 
 // =============== Functions =============================================
 void startControlled(uint32_t time60deg_init, void (*tooSlowCallback)(void)) {
@@ -39,18 +38,17 @@ void stopControlled() {
 	control3PhaseSinusApproximation(STOP_SIN_APPROX);
 }
 
-void proceedController(uint32_t rotorpos) {
-	uint32_t targetTime;
-	targetTime = (time60deg * (30 - TIMING)) / 60;
+void proceedController(volatile uint32_t rotorpos) {
+	volatile uint32_t targetTime = (time60deg * (30 - TIMING)) / 60;
 
-	int32_t fault = (targetTime - rotorpos);
+	volatile int32_t fault = (targetTime - rotorpos);
 
-	int32_t controllerOut = (fault / P_DIVIDER);
+	volatile int32_t controllerOut = (fault / P_DIVIDER);
 
 #ifdef I_CONTROLLER
 	// integrator active
-	static int32_t fault_I;
-	fault_I += fault;
+	volatile static int32_t fault_I;
+	fault_I = fault_I + fault;
 	controllerOut += fault_I / I_DIVIDER;
 #endif
 #ifdef D_CONTROLLER
@@ -59,7 +57,7 @@ void proceedController(uint32_t rotorpos) {
 	controllerOut += (fault-last_fault)/D_DIVIDER;
 #endif
 
-	time60deg = time60deg - controllerOut;
+	time60deg = time60deg + controllerOut;
 
 	setSinusApproximation60DegTime(time60deg);
 
@@ -69,12 +67,11 @@ void proceedController(uint32_t rotorpos) {
 		tooSlow_stopped_callback();
 	}
 
-	log_controllerParameterTuple(
+	log_controllerParameterTuple_mr(14,
 			time60deg,
 			rotorpos,
 			targetTime,
 			controllerOut);
-	//log_time60Deg(time60deg);
 }
 
 void informRotorPos_controlled(uint32_t rotorpos) {
@@ -82,9 +79,9 @@ void informRotorPos_controlled(uint32_t rotorpos) {
 }
 
 void informRotorTooEarly_controlled() {
-	proceedController(0);
+	//proceedController(0);
 }
 
 void informRotorTooLate_controlled() {
-	proceedController(time60deg);
+	//proceedController(time60deg);
 }
