@@ -156,6 +156,24 @@ fn          = callback. Called after the handed time.
 void startAfterUs(uint32_t time_us, void (*fn)(void));
 uint32_t getElapsedTimeInUs();
 
+#define DELAYED_CALLBACK_REGISTERED 1
+#define DELAYED_CALLBACK_ERROR 2
+#define DELAYED_CALLBACK_IS_BUSY 2
+#define DELAYED_CALLBACK_IS_READY 3
+uint8_t delayedCallback_A(uint32_t time_us, void (*listener)(void));
+uint8_t delayedCallback_B(uint32_t time_us, void (*listener)(void));
+uint8_t delayedCallback_C(uint32_t time_us, void (*listener)(void));
+uint8_t delayedCallback_D(uint32_t time_us, void (*listener)(void));
+
+uint8_t isBusy_delayedCallback_A();
+uint8_t isBusy_delayedCallback_B();
+uint8_t isBusy_delayedCallback_C();
+uint8_t isBusy_delayedCallback_D();
+
+void abort_delayedCallback_A();
+void abort_delayedCallback_B();
+void abort_delayedCallback_C();
+void abort_delayedCallback_D();
 
 //========================= UART ===================================
 void initUART();
@@ -201,5 +219,27 @@ uint16_t getLastStatusRegister2Value();
 void startup();
 void proceed();
 void shutdown();
+
+//========================= ENCODER ==============================
+void initEncoder();
+
+void enableSingleIRQ_encoderSignalA(void (*listener)(void));
+
+void enableIRQ_encoderSignalReferencePos(void (*listener)(void));
+void disableIRQ_encoderSignalReferencePos();
+
+void registerListener_oneElectricRotation(void (*listener)(void));
+
+uint8_t read_encoderSignalA();
+uint8_t read_encoderSignalB();
+uint8_t read_encoderEnable();
+uint8_t read_encoderCalibrate();
+
+uint32_t getNrImpulses_encoderSignalA();
+void resetNrImpulses_encoderSignalA();
+
+// calibration
+uint32_t measAnalog_encoderCalibrationPoti_BLOCKING();
+void switch_encoderPositionPin(uint8_t state);
 
 #endif /* INC_BLDC_DRIVER_HAL_H_ */

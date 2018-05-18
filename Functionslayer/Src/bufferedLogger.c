@@ -19,6 +19,7 @@
 // types
 #define TYPE_INT '1'
 #define TYPE_STRING '2'
+#define TYPE_EVENT '3'
 
 // names
 #define NAME_GENERIC_MESSAGE '1'
@@ -43,7 +44,21 @@
 
 #define NAME_CYCLE_TIME 'G'
 
-#define ZERO_CROSSINGS 'H'
+#define ZERO_CROSSING_PHASE_A_RISING 'H'
+#define ZERO_CROSSING_PHASE_B_RISING 'I'
+#define ZERO_CROSSING_PHASE_C_RISING 'J'
+#define ZERO_CROSSING_PHASE_A_FALLING 'K'
+#define ZERO_CROSSING_PHASE_B_FALLING 'L'
+#define ZERO_CROSSING_PHASE_C_FALLING 'M'
+
+#define NAME_SECTION_0_ACTIVE 'N'
+#define NAME_SECTION_1_ACTIVE 'O'
+#define NAME_SECTION_2_ACTIVE 'P'
+#define NAME_SECTION_3_ACTIVE 'Q'
+#define NAME_SECTION_4_ACTIVE 'R'
+#define NAME_SECTION_5_ACTIVE 'S'
+
+#define NAME_NR_IMPULSES_ENCODER 'T'
 
 // =============== Variables =============================================
 Ringbuffer *pRingbuffer;
@@ -54,6 +69,7 @@ Ringbuffer *pRingbuffer;
 void addUnsignedToRingbuffer(uint32_t number);
 void addSignedToRingbuffer(int32_t number);
 void addMsgToRingbuffer(char *pMsg);
+void addCharToRingbuffer(char data);
 
 // =============== Functions =============================================
 void initBufferedLogger() {
@@ -63,75 +79,91 @@ void initBufferedLogger() {
 //<STX>timestamp<GS>data_name<RS>data_type<RS>data<GS><ETX>
 void log_msg(char *pMsg) {
 #ifdef LOG_MSG
-	bufferIn(pRingbuffer, (uint32_t) STX);
+	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) NAME_GENERIC_MESSAGE);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_STRING);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(NAME_GENERIC_MESSAGE);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_STRING);
+	addCharToRingbuffer(RECORD_SEPERATOR);
 	addMsgToRingbuffer(pMsg);
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) ETX);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
 #endif
 }
 
-void log_time60Deg(uint32_t t60Deg){
+void log_time60Deg(uint32_t t60Deg) {
 #ifdef LOG_TIME60DEG
-	bufferIn(pRingbuffer, (uint32_t) STX);
+	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) NAME_ROTATION_FREQUENZY);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(NAME_ROTATION_FREQUENZY);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
 	addUnsignedToRingbuffer(t60Deg);
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) ETX);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
 #endif
 }
 
-void log_time60Deg_mr(uint32_t max_resolution_us, uint32_t t60Deg){
+void log_time60Deg_mr(uint32_t max_resolution_us, uint32_t t60Deg) {
 #ifdef LOG_TIME60DEG
 	static uint32_t last_timestamp_us;
-		uint32_t timestamp_us = getElapsedTimeInUs();
-		if((timestamp_us - last_timestamp_us) >= max_resolution_us){
-			last_timestamp_us = timestamp_us;
-			log_time60Deg(t60Deg);
-		}
+	uint32_t timestamp_us = getElapsedTimeInUs();
+	if((timestamp_us - last_timestamp_us) >= max_resolution_us) {
+		last_timestamp_us = timestamp_us;
+		log_time60Deg(t60Deg);
+	}
 #endif
 }
 
-void log_cycleTime(uint32_t cycleTime){
+void log_cycleTime(uint32_t cycleTime) {
 #ifdef LOG_TIME60DEG
-	bufferIn(pRingbuffer, (uint32_t) STX);
+	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) NAME_CYCLE_TIME);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(NAME_CYCLE_TIME);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
 	addUnsignedToRingbuffer(cycleTime);
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) ETX);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
 #endif
 }
 
-void log_maxCycleTimeStatistics(uint32_t max_resolution_us, uint32_t cycleTime){
+void log_maxCycleTimeStatistics(uint32_t max_resolution_us, uint32_t cycleTime) {
 #ifdef LOG_CYCLETIME
 	static uint32_t max_cycleTime;
 	static uint32_t last_timestamp_us;
 
-	if(cycleTime > max_cycleTime){
+	if(cycleTime > max_cycleTime) {
 		max_cycleTime = cycleTime;
 	}
 
 	uint32_t timestamp_us = getElapsedTimeInUs();
-	if((timestamp_us - last_timestamp_us) >= max_resolution_us){
+	if((timestamp_us - last_timestamp_us) >= max_resolution_us) {
 		last_timestamp_us = timestamp_us;
 		log_cycleTime(max_cycleTime);
 		max_cycleTime = 0;
 	}
+#endif
+}
+
+void log_nrImpulsesEncoder(uint32_t nrImpulses){
+#ifdef LOG_NR_IMPULSES_ENCODER
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(getTimestamp());
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(NAME_NR_IMPULSES_ENCODER);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addUnsignedToRingbuffer(nrImpulses);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
 #endif
 }
 
@@ -142,84 +174,183 @@ void log_maxCycleTimeStatistics(uint32_t max_resolution_us, uint32_t cycleTime){
 //		E<RS>1<RS>2495<GS>
 //		F<RS>1<RS>4294967272<GS>
 // <ETX>
-void log_controllerParameterTuple(uint32_t t60Deg, uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out){
+void log_controllerParameterTuple(uint32_t t60Deg, uint32_t rotorpos,
+		uint32_t rotorpos_setpoint, int32_t controller_out) {
 #ifdef LOG_CONTROLLER_PARAMETER_TUPLE
-	bufferIn(pRingbuffer, (uint32_t) STX);
+	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) NAME_ROTATION_FREQUENZY);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	addUnsignedToRingbuffer(t60Deg);
+	/*addCharToRingbuffer(GROUP_SEPERATOR);
+	 addCharToRingbuffer( NAME_ROTATION_FREQUENZY);
+	 addCharToRingbuffer(RECORD_SEPERATOR);
+	 addCharToRingbuffer(TYPE_INT);
+	 addCharToRingbuffer(RECORD_SEPERATOR);
+	 addUnsignedToRingbuffer(t60Deg);*/
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	addCharToRingbuffer(GROUP_SEPERATOR);
 
-	bufferIn(pRingbuffer, (uint32_t) NAME_ROTORPOSITION);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+	addCharToRingbuffer(NAME_ROTORPOSITION);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
 	addUnsignedToRingbuffer(rotorpos);
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	addCharToRingbuffer(GROUP_SEPERATOR);
 
-	bufferIn(pRingbuffer, (uint32_t) NAME_ROTORPOSITION_SETPOINT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+	addCharToRingbuffer(NAME_ROTORPOSITION_SETPOINT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
 	addUnsignedToRingbuffer(rotorpos_setpoint);
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	addCharToRingbuffer(GROUP_SEPERATOR);
 
-	bufferIn(pRingbuffer, (uint32_t) NAME_ROTORPOSITION_CONTROL_OUTPUT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	addSignedToRingbuffer(controller_out);
+	/*addCharToRingbuffer(NAME_ROTORPOSITION_CONTROL_OUTPUT);
+	 addCharToRingbuffer(RECORD_SEPERATOR);
+	 addCharToRingbuffer(TYPE_INT);
+	 addCharToRingbuffer(RECORD_SEPERATOR);
+	 addSignedToRingbuffer(controller_out);
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
+	 addCharToRingbuffer(GROUP_SEPERATOR);*/
 
-	bufferIn(pRingbuffer, (uint32_t) ETX);
+	addCharToRingbuffer(ETX);
 #endif
 }
 
-void log_controllerParameterTuple_mr(uint32_t nrIgnoredCalls, uint32_t t60Deg, uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out){
+void log_controllerParameterTuple_mr(uint32_t nrIgnoredCalls, uint32_t t60Deg,
+		uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out) {
 #ifdef LOG_CONTROLLER_PARAMETER_TUPLE
 	static uint32_t cnt;
 	cnt++;
-	if(cnt >= nrIgnoredCalls){
+	if(cnt >= nrIgnoredCalls) {
 		log_controllerParameterTuple(t60Deg, rotorpos, rotorpos_setpoint, controller_out);
 		cnt = 0;
 	}
 #endif
 }
 
-void log_zeroCrossings(uint32_t buffer[]){
-	bufferIn(pRingbuffer, (uint32_t) STX);
-	addUnsignedToRingbuffer(getTimestamp());
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) ZERO_CROSSINGS);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) TYPE_INT);
-	bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
+// events
+void log_zeroCrossing(uint8_t phase, uint32_t timestamp) {
+#ifdef LOG_MEAS_ZEROCROSSING
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(timestamp);
 
-	uint32_t cnt = 0;
-	while(1){
-		if(buffer[cnt] != 0){
-			addUnsignedToRingbuffer(buffer[cnt]);
-			bufferIn(pRingbuffer, (uint32_t) RECORD_SEPERATOR);
-			buffer[cnt] = 0;
-			cnt++;
-		}else{
-			break;
-		}
-	}
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ZERO_CROSSING_PHASE_A_RISING);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_EVENT);
 
-	bufferIn(pRingbuffer, (uint32_t) GROUP_SEPERATOR);
-	bufferIn(pRingbuffer, (uint32_t) ETX);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
+#endif
 }
 
+void log_zeroCrossingPhaseA(uint32_t timestamp) {
+#ifdef LOG_MEAS_ZEROCROSSING
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(timestamp);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ZERO_CROSSING_PHASE_A_RISING);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_EVENT);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
+#endif
+}
+void log_zeroCrossingPhaseB(uint32_t timestamp) {
+#ifdef LOG_MEAS_ZEROCROSSING
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(timestamp);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ZERO_CROSSING_PHASE_B_RISING);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_EVENT);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
+#endif
+}
+void log_zeroCrossingPhaseC(uint32_t timestamp) {
+#ifdef LOG_MEAS_ZEROCROSSING
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(timestamp);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ZERO_CROSSING_PHASE_C_RISING);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_EVENT);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
+#endif
+}
+
+void log_sectionActive(uint32_t timestamp, uint8_t section) {
+#ifdef LOG_SECTION_ACTIVE
+	char sectionName;
+
+	switch (section) {
+	case 0:
+#ifdef LOG_SECTION_0_ACTIVE
+		sectionName = NAME_SECTION_0_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	case 1:
+#ifdef LOG_SECTION_1_ACTIVE
+		sectionName = NAME_SECTION_1_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	case 2:
+#ifdef LOG_SECTION_2_ACTIVE
+		sectionName = NAME_SECTION_2_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	case 3:
+#ifdef LOG_SECTION_3_ACTIVE
+		sectionName = NAME_SECTION_3_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	case 4:
+#ifdef LOG_SECTION_4_ACTIVE
+		sectionName = NAME_SECTION_4_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	case 5:
+#ifdef LOG_SECTION_5_ACTIVE
+		sectionName = NAME_SECTION_5_ACTIVE;
+		break;
+#else
+		return;
+#endif
+	}
+
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(timestamp);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(sectionName);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_EVENT);
+
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
+#endif
+}
+
+// handling of the logger
 void log_writeBuffered() {
 	int32_t data;
 	int32_t *pData = &data;
@@ -232,7 +363,6 @@ void log_writeBuffered() {
 	}
 }
 
-// functions to add elements to buffer
 void addUnsignedToRingbuffer(uint32_t number) {
 	uint8_t tempBuffer[10]; // 2^32 = 10 digits
 	uint32_t cnt = 0;
@@ -281,10 +411,10 @@ void addUnsignedToRingbuffer(uint32_t number) {
 	}
 
 	// fill ringbuffer
-	while(1){
-		bufferIn(pRingbuffer, (uint32_t) tempBuffer[cnt-1]);
+	while (1) {
+		addCharToRingbuffer(tempBuffer[cnt - 1]);
 		cnt--;
-		if(cnt == 0){
+		if (cnt == 0) {
 			return;
 		}
 	}
@@ -294,7 +424,7 @@ void addSignedToRingbuffer(int32_t number) {
 	if (number < 0) {
 		number = number * (-1);
 
-		bufferIn(pRingbuffer, (uint32_t) '-');
+		addCharToRingbuffer('-');
 	}
 
 	addUnsignedToRingbuffer(number);
@@ -306,8 +436,16 @@ void addMsgToRingbuffer(char *pMsg) {
 			return;
 		}
 
-		bufferIn(pRingbuffer, (uint32_t) *pMsg);
+		addCharToRingbuffer(*pMsg);
 
 		pMsg++;
+	}
+}
+
+void addCharToRingbuffer(char data) {
+	if (bufferIn(pRingbuffer, (uint32_t) data) == BUFFER_OVERFLOW) {
+		// reset and log
+		bufferReset(pRingbuffer);
+		log_msg("Logging buffer reseted because of a overflow");
 	}
 }

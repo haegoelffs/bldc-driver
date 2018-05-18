@@ -58,39 +58,37 @@ uint8_t getActiveSection();
  */
 uint8_t getPhasecontrolState();
 
-void registerSectionChangedListener(void (*pListener)(uint8_t oldSection, uint8_t newSection));
-void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section));
+
+void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section, uint8_t nextSection));
 
 //========================= ZERO CROSSING ===================================
-void initZeroCrossingService();
-
-void registerlistener_zeroCrossing_phaseA(void (*listener)(volatile uint8_t));
-void registerlistener_zeroCrossing_phaseB(void (*listener)(volatile uint8_t));
-void registerlistener_zeroCrossing_phaseC(void (*listener)(volatile uint8_t));
-
-/** Register the handed function as listener which is called when the voltage of one phase crosses zero
-    Input:
-    listener = function with parameter.
-    phase:
-    	--> phase = 'A': phase A
-    	--> phase = 'B': phase B
-    	--> phase = 'C': phase C
-    edge:
-        --> edge = 0: falling edge
-        --> edge = 1: rising edge
-**/
-void registerZeroCrossingListener(void (*listener)(uint8_t, uint8_t));
 #define FALLING_EDGE ZERO_CROSSING_SIGNAL_LOW
 #define RISING_EDGE ZERO_CROSSING_SIGNAL_HIGH
 #define ZERO_CROSSING_SIGNAL_LOW 0
 #define ZERO_CROSSING_SIGNAL_HIGH 1
+
+#define TIME_DELAY_INTERRUPT_FILTER 100
+
 #define PHASE_A 'A'
 #define PHASE_B 'B'
 #define PHASE_C 'C'
 
-void enableZeroCrossingIRQ(uint8_t phase, uint8_t enable);
-void resetFilter();
+void initZeroCrossingService();
 
+void registerListener_zeroCrossing_phaseA(void (*listener)(volatile uint8_t));
+void registerListener_zeroCrossing_phaseB(void (*listener)(volatile uint8_t));
+void registerListener_zeroCrossing_phaseC(void (*listener)(volatile uint8_t));
+
+void registerListener_zeroCrossing(
+				void (*listener_phaseA)(volatile uint8_t),
+				void (*listener_phaseB)(volatile uint8_t),
+				void (*listener_phaseC)(volatile uint8_t));
+
+void enableZeroCrossingIRQ(uint8_t phase, uint8_t enable);
 uint8_t readStatusOfZeroCrossingSignal(uint8_t phase);
+
+//========================= ENCODER ===================================
+void initEncoderService();
+void setReferencePositionOffset(uint32_t newOffset);
 
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */

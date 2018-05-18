@@ -16,9 +16,9 @@ uint8_t stateSwitchState = 0;
 uint32_t userInValue = 0;
 
 void debounceMainSwitch() {
-	static int8_t cnt = 0;
+	//static int8_t cnt = 0;
 
-	if (read_MainButton()) {
+	/*if (read_MainButton()) {
 		cnt++;
 	} else {
 		cnt--;
@@ -30,7 +30,7 @@ void debounceMainSwitch() {
 	} else if (cnt >= DEBOUNCE_HYSTERESIS) {
 		cnt = DEBOUNCE_HYSTERESIS;
 		mainSwitchState = 1;
-	}
+	}*/
 }
 void debounceStateSwitch() {
 	static int8_t cnt = 0;

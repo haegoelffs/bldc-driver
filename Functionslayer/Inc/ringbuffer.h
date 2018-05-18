@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define BUFFER_FAIL 0
+#define BUFFER_OVERFLOW 0
 #define BUFFER_SUCCESS 1
 #define BUFFER_EMPTY 2
 
@@ -28,5 +28,7 @@ Ringbuffer * allocRingbuffer(uint32_t bufferSize);
 uint8_t bufferIn(Ringbuffer *pBuffer, int32_t data);
 
 uint8_t bufferOut(Ringbuffer *pBuffer, int32_t *pData);
+
+void bufferReset(Ringbuffer *pBuffer);
 
 #endif /* INC_RINGBUFFER_H_ */

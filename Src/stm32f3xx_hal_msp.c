@@ -96,9 +96,15 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     }
   
     /**ADC1 GPIO Configuration    
+    PC2     ------> ADC1_IN8
     PA0     ------> ADC1_IN1
     PA3     ------> ADC1_IN4 
     */
+    GPIO_InitStruct.Pin = ADC_INC_CALIBRATE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(ADC_INC_CALIBRATE_GPIO_Port, &GPIO_InitStruct);
+
     GPIO_InitStruct.Pin = ADC_SHUNT_A_Pin|ADC_HALL_B_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -197,9 +203,12 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     **/
   
     /**ADC1 GPIO Configuration    
+    PC2     ------> ADC1_IN8
     PA0     ------> ADC1_IN1
     PA3     ------> ADC1_IN4 
     */
+    HAL_GPIO_DeInit(ADC_INC_CALIBRATE_GPIO_Port, ADC_INC_CALIBRATE_Pin);
+
     HAL_GPIO_DeInit(GPIOA, ADC_SHUNT_A_Pin|ADC_HALL_B_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
@@ -390,6 +399,8 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
     /* Peripheral clock enable */
     __HAL_RCC_TIM1_CLK_ENABLE();
     /* TIM1 interrupt Init */
+    HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
     HAL_NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
   /* USER CODE BEGIN TIM1_MspInit 1 */
@@ -435,6 +446,7 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
 
+  GPIO_InitTypeDef GPIO_InitStruct;
   if(htim_base->Instance==TIM2)
   {
   /* USER CODE BEGIN TIM2_MspInit 0 */
@@ -448,6 +460,31 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
   /* USER CODE BEGIN TIM2_MspInit 1 */
 
   /* USER CODE END TIM2_MspInit 1 */
+  }
+  else if(htim_base->Instance==TIM15)
+  {
+  /* USER CODE BEGIN TIM15_MspInit 0 */
+
+  /* USER CODE END TIM15_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM15_CLK_ENABLE();
+  
+    /**TIM15 GPIO Configuration    
+    PA2     ------> TIM15_CH1 
+    */
+    GPIO_InitStruct.Pin = CNT_INC_A_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF9_TIM15;
+    HAL_GPIO_Init(CNT_INC_A_GPIO_Port, &GPIO_InitStruct);
+
+    /* TIM15 interrupt Init */
+    HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
+  /* USER CODE BEGIN TIM15_MspInit 1 */
+
+  /* USER CODE END TIM15_MspInit 1 */
   }
   else if(htim_base->Instance==TIM16)
   {
@@ -566,6 +603,14 @@ void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* htim_pwm)
     __HAL_RCC_TIM1_CLK_DISABLE();
 
     /* TIM1 interrupt DeInit */
+  /* USER CODE BEGIN TIM1:TIM1_BRK_TIM15_IRQn disable */
+    /**
+    * Uncomment the line below to disable the "TIM1_BRK_TIM15_IRQn" interrupt
+    * Be aware, disabling shared interrupt may affect other IPs
+    */
+    /* HAL_NVIC_DisableIRQ(TIM1_BRK_TIM15_IRQn); */
+  /* USER CODE END TIM1:TIM1_BRK_TIM15_IRQn disable */
+
   /* USER CODE BEGIN TIM1:TIM1_UP_TIM16_IRQn disable */
     /**
     * Uncomment the line below to disable the "TIM1_UP_TIM16_IRQn" interrupt
@@ -630,6 +675,32 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
   /* USER CODE BEGIN TIM2_MspDeInit 1 */
 
   /* USER CODE END TIM2_MspDeInit 1 */
+  }
+  else if(htim_base->Instance==TIM15)
+  {
+  /* USER CODE BEGIN TIM15_MspDeInit 0 */
+
+  /* USER CODE END TIM15_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM15_CLK_DISABLE();
+  
+    /**TIM15 GPIO Configuration    
+    PA2     ------> TIM15_CH1 
+    */
+    HAL_GPIO_DeInit(CNT_INC_A_GPIO_Port, CNT_INC_A_Pin);
+
+    /* TIM15 interrupt DeInit */
+  /* USER CODE BEGIN TIM15:TIM1_BRK_TIM15_IRQn disable */
+    /**
+    * Uncomment the line below to disable the "TIM1_BRK_TIM15_IRQn" interrupt
+    * Be aware, disabling shared interrupt may affect other IPs
+    */
+    /* HAL_NVIC_DisableIRQ(TIM1_BRK_TIM15_IRQn); */
+  /* USER CODE END TIM15:TIM1_BRK_TIM15_IRQn disable */
+
+  /* USER CODE BEGIN TIM15_MspDeInit 1 */
+
+  /* USER CODE END TIM15_MspDeInit 1 */
   }
   else if(htim_base->Instance==TIM16)
   {

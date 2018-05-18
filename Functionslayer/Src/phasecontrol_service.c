@@ -4,18 +4,22 @@
  *  Created on: Dec 15, 2017
  *      Author: simon
  */
-
+// =============== Includes ==============================================
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
 #include "bufferedLogger.h"
+// =============== Defines ===============================================
 
+// =============== Variables =============================================
 static uint8_t activeState = STOP_SIN_APPROX;
-static volatile uint8_t phaseState = 6; // power off all
+static volatile uint8_t phaseSection = 6; // power off all
 static uint32_t t60Deg = 0;
+static uint32_t timestampStartSection;
 
-void (*pSectionChangedListener)(uint8_t oldSection, uint8_t newSection);
-void (*pSectionEndsListener)(uint8_t section);
+// =============== Function pointers =====================================
+void (*pSectionEndsListener)(uint8_t section, uint8_t nextSection);
 
+// =============== Function declarations =================================
 /** Changes the output channels for the pwm.
  Input:
  state = 0: A heavyside, C lowside
@@ -26,15 +30,16 @@ void (*pSectionEndsListener)(uint8_t section);
  state = 5: A heavyside, B lowside
  state > 5: power off all channels
  **/
-void changePhaseState(uint8_t state);
+void changePhaseState(uint8_t newPhaseSection);
 void switchPhases(uint8_t forward_backward_selecter);
 void timerCallback();
 
+// =============== Functions =============================================
 void initPhaseControllService() {
 	log_msg("phasencontrol service initialized.");
 }
 
-void changePhaseState(uint8_t newPhaseState) {
+void changePhaseState(uint8_t newPhaseSection) {
 	enable_PWM_phaseA_HS(0);
 	enable_PWM_phaseB_HS(0);
 	enable_PWM_phaseC_HS(0);
@@ -42,7 +47,7 @@ void changePhaseState(uint8_t newPhaseState) {
 	enable_PWM_phaseB_LS(0);
 	enable_PWM_phaseC_LS(0);
 
-	switch (newPhaseState) {
+	switch (newPhaseSection) {
 	case 0:
 		enable_PWM_phaseA_HS(1);
 		enable_PWM_phaseC_LS(1);
@@ -77,27 +82,20 @@ void changePhaseState(uint8_t newPhaseState) {
 		break;
 	}
 
-	phaseState = newPhaseState;
+	phaseSection = newPhaseSection;
 }
 
 void switchPhases(uint8_t forward_backward_selecter) {
-	static uint8_t phasestate;
-	uint8_t oldPhasestate = phasestate;
-
-	// inform listener
-	if(pSectionEndsListener != 0){
-		pSectionEndsListener(phasestate);
-	}
+	// calc next section
+	uint8_t nextSection;
 
 	switch (forward_backward_selecter) {
 	case START_SIN_APPROX_FORWARD:
-		phasestate = (phasestate + 1) % 6;
-		changePhaseState(phasestate);
+		nextSection = (phaseSection + 1) % 6;
 		break;
 
 	case START_SIN_APPROX_BACKWARD:
-		phasestate = (phasestate - 1) % 6;
-		changePhaseState(phasestate);
+		nextSection = (phaseSection - 1) % 6;
 		break;
 
 	default:
@@ -105,15 +103,22 @@ void switchPhases(uint8_t forward_backward_selecter) {
 	}
 
 	// inform listener
-	/*if (pSectionChangedListener != 0) {
-		pSectionChangedListener(phaseState, oldPhasestate);
-	};*/
+	if (pSectionEndsListener != 0) {
+		pSectionEndsListener(phaseSection, nextSection);
+	}
+
+	changePhaseState(nextSection);
+	timestampStartSection = getTimestamp();
+	log_sectionActive(timestampStartSection, nextSection);
 }
 
 void control3PhaseSinusApproximation(uint8_t start_stop_selecter) {
-	// todo: überprüfen parameter (60deg zeit etc.), rückgabe Fehlercode
 	if (start_stop_selecter != STOP_SIN_APPROX && t60Deg != 0) {
-		startAfterUs(t60Deg, &timerCallback);
+		//startAfterUs(t60Deg, &timerCallback);
+		if (delayedCallback_D(t60Deg,
+				&timerCallback) != DELAYED_CALLBACK_REGISTERED) {
+			control3PhaseSinusApproximation(STOP_SIN_APPROX);
+		}
 	} else {
 		enable_PWM_phaseA_HS(0);
 		enable_PWM_phaseB_HS(0);
@@ -122,7 +127,7 @@ void control3PhaseSinusApproximation(uint8_t start_stop_selecter) {
 		enable_PWM_phaseB_LS(0);
 		enable_PWM_phaseC_LS(0);
 
-		phaseState = 6;
+		phaseSection = 6;
 	}
 	activeState = start_stop_selecter;
 }
@@ -135,12 +140,16 @@ void timerCallback() {
 	if (activeState == START_SIN_APPROX_FORWARD
 			|| activeState == START_SIN_APPROX_BACKWARD) {
 		switchPhases(activeState);
-		startAfterUs(t60Deg, &timerCallback);
+
+		if (delayedCallback_D(t60Deg,
+				&timerCallback) != DELAYED_CALLBACK_REGISTERED) {
+			control3PhaseSinusApproximation(STOP_SIN_APPROX);
+		}
 	}
 }
 
 // getters
-uint32_t getSinusApproximation60DegTime(){
+uint32_t getSinusApproximation60DegTime() {
 	return t60Deg;
 }
 
@@ -149,14 +158,11 @@ uint8_t getPhasecontrolState() {
 }
 
 uint8_t getActiveSection() {
-	return phaseState;
+	return phaseSection;
 }
 
 // register listeners
-void registerSectionChangedListener(void (*pListener)(uint8_t oldSection, uint8_t newSection)) {
-	pSectionChangedListener = pListener;
-}
-
-void registerListener_sectionEnds_ISR(void (*pListener)(uint8_t section)){
+void registerListener_sectionEnds_ISR(
+		void (*pListener)(uint8_t section, uint8_t nextSection)) {
 	pSectionEndsListener = pListener;
 }

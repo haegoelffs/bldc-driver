@@ -9,7 +9,6 @@
 #include <stdlib.h>
 
 #include "ringbuffer.h"
-#include "logger.h"
 
 Ringbuffer* allocRingbuffer(uint32_t bufferSize) {
 	Ringbuffer *p;
@@ -25,7 +24,7 @@ unsigned char bufferIn(Ringbuffer *pBuffer, int32_t data) {
 	int after_next_write = (pBuffer->next_write + 1) % pBuffer->capacity;
 
 	if (after_next_write == pBuffer->next_read) {
-		return BUFFER_FAIL;
+		return BUFFER_OVERFLOW;
 	}
 
 	// write data in array
@@ -49,4 +48,9 @@ uint8_t bufferOut(Ringbuffer *pBuffer, int32_t *pData) {
 	pBuffer->next_read = (pBuffer->next_read + 1) % pBuffer->capacity;
 
 	return BUFFER_SUCCESS;
+}
+
+void bufferReset(Ringbuffer *pBuffer){
+	pBuffer->next_read = 0;
+	pBuffer->next_write = 0;
 }

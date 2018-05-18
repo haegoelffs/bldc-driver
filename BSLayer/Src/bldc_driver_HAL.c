@@ -8,6 +8,7 @@
 #include "bldc_driver_HAL.h"
 
 #include "main.h"
+#include "bufferedLogger.h"
 
 #include "bldc_driver_adapter.h"
 
@@ -15,7 +16,7 @@
 static ADC_HandleTypeDef *pShuntA_hallB_ADC_handle;
 static ADC_HandleTypeDef *pShuntB_hallA_ADC_handle;
 static ADC_HandleTypeDef *pUser_ADC_handle;
-static ADC_HandleTypeDef *pMainPower_ADC_handle;
+static ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle;
 
 static DAC_HandleTypeDef *pVirtZero_DAC_handler;
 
@@ -25,10 +26,16 @@ static TIM_HandleTypeDef *pC_LS_HS_PWM_handle;
 static TIM_HandleTypeDef *pB_HS_PWM_handle;
 static TIM_HandleTypeDef *pCallback_Timer_handle;
 static TIM_HandleTypeDef *pSystemtime_Timer_handle;
+static TIM_HandleTypeDef *pEncoder_Counter_handle;
 
 static SPI_HandleTypeDef *pSPI_handle;
 
 static UART_HandleTypeDef *pUART_handle;
+
+// decoder callbacks
+static void (*listener_encoderInReferencePosition)(void);
+static void (*listener_encoderSignalChanged)(void);
+static void (*listener_waitForEncoderTicks)(void);
 
 // comperator interrupt listeners
 static void (*listenerPhaseA)(uint8_t edge);
@@ -54,6 +61,11 @@ static uint16_t statusRegister2;
 
 // timer callbacks
 static void (*listener_callback_timer)(void);
+static void (*listener_delayed_callback_A)(void);
+static void (*listener_delayed_callback_B)(void);
+static void (*listener_delayed_callback_C)(void);
+static void (*listener_delayed_callback_D)(void);
+
 static uint32_t delayTimeInUs = 0;
 static uint32_t elapsedTimeInUs = 0;
 static uint32_t deltaSystimeInUs = 0;
@@ -61,7 +73,8 @@ static uint32_t deltaSystimeInUs = 0;
 void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
 		ADC_HandleTypeDef *pShuntB_hallA_ADC_handle_param,
 		ADC_HandleTypeDef *pUser_ADC_handle_param,
-		ADC_HandleTypeDef *pMainPower_ADC_handle_param,
+		ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle_param,
+
 		DAC_HandleTypeDef *pVirtZero_DAC_handler_param,
 		TIM_HandleTypeDef *pA_LS_HS_PWM_handle_param,
 		TIM_HandleTypeDef *pB_LS_PWM_handle_param,
@@ -69,19 +82,25 @@ void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
 		TIM_HandleTypeDef *pB_HS_PWM_handle_param,
 		TIM_HandleTypeDef *pCallback_Timer_param,
 		TIM_HandleTypeDef *pSystemtime_Timer_param,
+		TIM_HandleTypeDef *pEncoder_Counter_handle_param,
 		SPI_HandleTypeDef *pSPI_handle_param,
 		UART_HandleTypeDef *pUART_handle_param) {
 	pShuntA_hallB_ADC_handle = pShuntA_hallB_ADC_handle_param;
 	pShuntB_hallA_ADC_handle = pShuntB_hallA_ADC_handle_param;
 	pUser_ADC_handle = pUser_ADC_handle_param;
-	pMainPower_ADC_handle = pMainPower_ADC_handle_param;
+	pMainVoltage_EncoderPoti_ADC_handle =
+			pMainVoltage_EncoderPoti_ADC_handle_param;
+
 	pVirtZero_DAC_handler = pVirtZero_DAC_handler_param;
+
 	pA_LS_HS_PWM_handle = pA_LS_HS_PWM_handle_param;
 	pB_LS_PWM_handle = pB_LS_PWM_handle_param;
 	pC_LS_HS_PWM_handle = pC_LS_HS_PWM_handle_param;
 	pB_HS_PWM_handle = pB_HS_PWM_handle_param;
 	pCallback_Timer_handle = pCallback_Timer_param;
 	pSystemtime_Timer_handle = pSystemtime_Timer_param;
+	pEncoder_Counter_handle = pEncoder_Counter_handle_param;
+
 	pUART_handle = pUART_handle_param;
 	pSPI_handle = pSPI_handle_param;
 
@@ -132,12 +151,6 @@ uint8_t read_PWRGD_BridgeDriver() {
 }
 
 // main interface
-void switch_MainSwitch(uint8_t state) {
-	HAL_GPIO_WritePin(DO_MAIN_SWITCH_GPIO_Port, DO_MAIN_SWITCH_Pin, state);
-}
-uint8_t read_MainButton() {
-	return HAL_GPIO_ReadPin(DI_MAIN_BUTTON_GPIO_Port, DI_MAIN_BUTTON_Pin);
-}
 uint8_t read_StateButton() {
 	return HAL_GPIO_ReadPin(DI_USER_IN_GPIO_Port, DI_USER_IN_Pin);
 }
@@ -243,13 +256,13 @@ void phaseCComp_interrupt() {
 	}
 }
 
-uint8_t read_signal_compA(){
+uint8_t read_signal_compA() {
 	return HAL_GPIO_ReadPin(IR_COMP_A_GPIO_Port, IR_COMP_A_Pin);
 }
-uint8_t read_signal_compB(){
+uint8_t read_signal_compB() {
 	return HAL_GPIO_ReadPin(IR_COMP_B_GPIO_Port, IR_COMP_B_Pin);
 }
-uint8_t read_signal_compC(){
+uint8_t read_signal_compC() {
 	return HAL_GPIO_ReadPin(IR_COMP_C_GPIO_Port, IR_COMP_C_Pin);
 }
 
@@ -325,20 +338,21 @@ uint32_t getLastMeas_userVolatgeMeas() {
 uint8_t isMeasReady_userVolatgeMeas() {
 	return (HAL_ADC_GetState(pUser_ADC_handle) && HAL_ADC_STATE_READY);
 }
-uint8_t newDataAvailable_userVolatgeMeas(){
+uint8_t newDataAvailable_userVolatgeMeas() {
 	return newData_userIn_ADCValue_flag;
 }
 
 // main voltage
 int8_t start_mainVoltageMeas() {
 	if (isMeasReady_mainVolatgeMeas()) {
-		HAL_ADC_Start_IT(pMainPower_ADC_handle);
+		HAL_ADC_Start_IT(pMainVoltage_EncoderPoti_ADC_handle);
 		return 0;
 	}
 	return -1;
 }
 uint8_t isMeasReady_mainVolatgeMeas() {
-	return (HAL_ADC_GetState(pMainPower_ADC_handle) && HAL_ADC_STATE_READY);
+	return (HAL_ADC_GetState(pMainVoltage_EncoderPoti_ADC_handle)
+			&& HAL_ADC_STATE_READY);
 }
 uint8_t newDataAvailable_mainVolatgeMeas() {
 	return newData_mainPower_ADCValue_flag;
@@ -365,7 +379,8 @@ void hallA_shuntB_adc_interrupt() {
 }
 
 void callback_ADC_mainPower_IRQ() {
-	last_mainPower_ADCValue = (HAL_ADC_GetValue(pMainPower_ADC_handle)-940)*1.35;
+	last_mainPower_ADCValue = (HAL_ADC_GetValue(
+			pMainVoltage_EncoderPoti_ADC_handle) - 940) * 1.35;
 	newData_mainPower_ADCValue_flag = 1;
 }
 void callback_ADC_userIn_IRQ() {
@@ -384,7 +399,7 @@ void enable_virtualGND(uint8_t enable) {
 }
 void set_virtualGNDValue(uint32_t value) {
 	HAL_DAC_SetValue(pVirtZero_DAC_handler, DAC_virtual_GND_channel,
-			DAC_ALIGN_12B_R, value);
+	DAC_ALIGN_12B_R, value);
 }
 
 //========================= PWM ===================================
@@ -468,8 +483,23 @@ void enable_PWM_phaseC_LS(uint8_t enable) {
 
 //========================= TIME ==================================
 void initSystime() {
-	HAL_TIM_Base_Start(pSystemtime_Timer_handle);
+	//HAL_TIM_Base_Start(pSystemtime_Timer_handle);
+
+	HAL_TIM_OC_Start_IT(pSystemtime_Timer_handle, TIM_CHANNEL_1);
+	HAL_TIM_OC_Start_IT(pSystemtime_Timer_handle, TIM_CHANNEL_2);
+	HAL_TIM_OC_Start_IT(pSystemtime_Timer_handle, TIM_CHANNEL_3);
+	HAL_TIM_OC_Start_IT(pSystemtime_Timer_handle, TIM_CHANNEL_4);
+
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_A_channel,
+			0);
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_B_channel,
+			0);
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_C_channel,
+			0);
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_D_channel,
+			0);
 }
+
 uint32_t getSystimeUs() {
 	return __HAL_TIM_GET_COUNTER(pSystemtime_Timer_handle);
 }
@@ -548,10 +578,99 @@ void startAfterUs(uint32_t time_us, void (*listener)(void)) {
 	 break;
 	 }*/
 }
+
 uint32_t getElapsedTimeInUs() {
 	return __HAL_TIM_GET_COUNTER(pCallback_Timer_handle);
 }
 
+uint8_t delayedCallback_A(uint32_t time_us, void (*listener)(void)) {
+	if (isBusy_delayedCallback_A() != DELAYED_CALLBACK_IS_READY) {
+		return DELAYED_CALLBACK_ERROR;
+	}
+
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_A_channel,
+			getSystimeUs() + time_us);
+
+	listener_delayed_callback_A = listener;
+
+	return DELAYED_CALLBACK_REGISTERED;
+}
+uint8_t delayedCallback_B(uint32_t time_us, void (*listener)(void)) {
+	if (isBusy_delayedCallback_B() != DELAYED_CALLBACK_IS_READY) {
+		return DELAYED_CALLBACK_ERROR;
+	}
+
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_B_channel,
+			getSystimeUs() + time_us);
+
+	listener_delayed_callback_B = listener;
+
+	return DELAYED_CALLBACK_REGISTERED;
+}
+uint8_t delayedCallback_C(uint32_t time_us, void (*listener)(void)) {
+	if (isBusy_delayedCallback_C() != DELAYED_CALLBACK_IS_READY) {
+		return DELAYED_CALLBACK_ERROR;
+	}
+
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_C_channel,
+			getSystimeUs() + time_us);
+
+	listener_delayed_callback_C = listener;
+
+	return DELAYED_CALLBACK_REGISTERED;
+}
+uint8_t delayedCallback_D(uint32_t time_us, void (*listener)(void)) {
+	if (isBusy_delayedCallback_D() != DELAYED_CALLBACK_IS_READY) {
+		return DELAYED_CALLBACK_ERROR;
+	}
+
+	__HAL_TIM_SET_COMPARE(pSystemtime_Timer_handle, DELAYED_CALLBACK_D_channel,
+			getSystimeUs() + time_us);
+
+	listener_delayed_callback_D = listener;
+
+	return DELAYED_CALLBACK_REGISTERED;
+}
+
+uint8_t isBusy_delayedCallback_A() {
+	if (listener_delayed_callback_A != 0) {
+		return DELAYED_CALLBACK_IS_BUSY;
+	}
+	return DELAYED_CALLBACK_IS_READY;
+}
+uint8_t isBusy_delayedCallback_B() {
+	if (listener_delayed_callback_B != 0) {
+		return DELAYED_CALLBACK_IS_BUSY;
+	}
+	return DELAYED_CALLBACK_IS_READY;
+}
+uint8_t isBusy_delayedCallback_C() {
+	if (listener_delayed_callback_C != 0) {
+		return DELAYED_CALLBACK_IS_BUSY;
+	}
+	return DELAYED_CALLBACK_IS_READY;
+}
+uint8_t isBusy_delayedCallback_D() {
+	if (listener_delayed_callback_D != 0) {
+		return DELAYED_CALLBACK_IS_BUSY;
+	}
+	return DELAYED_CALLBACK_IS_READY;
+}
+
+void abort_delayedCallback_A() {
+	listener_delayed_callback_A = 0;
+}
+void abort_delayedCallback_B() {
+	listener_delayed_callback_B = 0;
+}
+void abort_delayedCallback_C() {
+	listener_delayed_callback_C = 0;
+}
+void abort_delayedCallback_D() {
+	listener_delayed_callback_D = 0;
+}
+
+// callbacks adapter
 void callbackTimer_interrupt() {
 	if (listener_callback_timer != 0) {
 		// registered listener = valid interrupt
@@ -580,6 +699,53 @@ void callbackTimer_interrupt() {
 			}
 
 			HAL_TIM_Base_Start_IT(pCallback_Timer_handle);
+		}
+	}
+}
+
+void systime_interrupt() {
+	if (__HAL_TIM_GET_FLAG(pSystemtime_Timer_handle,
+			DELAYED_CALLBACK_A_ir_flag)) {
+		__HAL_TIM_CLEAR_FLAG(pSystemtime_Timer_handle,
+				DELAYED_CALLBACK_A_ir_flag);
+		if (listener_delayed_callback_A != 0) {
+			void (*temp)(void);
+			temp = listener_delayed_callback_A;
+			listener_delayed_callback_A = 0;
+			temp();
+		}
+	}
+	if (__HAL_TIM_GET_FLAG(pSystemtime_Timer_handle,
+			DELAYED_CALLBACK_B_ir_flag)) {
+		__HAL_TIM_CLEAR_FLAG(pSystemtime_Timer_handle,
+				DELAYED_CALLBACK_B_ir_flag);
+		if (listener_delayed_callback_B != 0) {
+			void (*temp)(void);
+			temp = listener_delayed_callback_B;
+			listener_delayed_callback_B = 0;
+			temp();
+		}
+	}
+	if (__HAL_TIM_GET_FLAG(pSystemtime_Timer_handle,
+			DELAYED_CALLBACK_C_ir_flag)) {
+		__HAL_TIM_CLEAR_FLAG(pSystemtime_Timer_handle,
+				DELAYED_CALLBACK_C_ir_flag);
+		if (listener_delayed_callback_C != 0) {
+			void (*temp)(void);
+			temp = listener_delayed_callback_C;
+			listener_delayed_callback_C = 0;
+			temp();
+		}
+	}
+	if (__HAL_TIM_GET_FLAG(pSystemtime_Timer_handle,
+			DELAYED_CALLBACK_D_ir_flag)) {
+		__HAL_TIM_CLEAR_FLAG(pSystemtime_Timer_handle,
+				DELAYED_CALLBACK_D_ir_flag);
+		if (listener_delayed_callback_D != 0) {
+			void (*temp)(void);
+			temp = listener_delayed_callback_D;
+			listener_delayed_callback_D = 0;
+			temp();
 		}
 	}
 }
@@ -614,16 +780,16 @@ void spi_readStatusRegisters_BLOCKING() {
 
 	switch (status) {
 	case HAL_OK:
-		logDEBUG("spi status: ok");
+		//logDEBUG("spi status: ok");
 		break;
 	case HAL_ERROR:
-		logDEBUG("spi status: error");
+		//logDEBUG("spi status: error");
 		break;
 	case HAL_BUSY:
-		logDEBUG("spi status: busy");
+		//logDEBUG("spi status: busy");
 		break;
 	case HAL_TIMEOUT:
-		logDEBUG("spi status: timeout");
+		//logDEBUG("spi status: timeout");
 		break;
 	}
 	selectBridgeDriverAsSPISlave(0);
@@ -644,16 +810,16 @@ void spi_readStatusRegisters_BLOCKING() {
 
 	switch (status) {
 	case HAL_OK:
-		logDEBUG("spi status: ok");
+		//logDEBUG("spi status: ok");
 		break;
 	case HAL_ERROR:
-		logDEBUG("spi status: error");
+		//logDEBUG("spi status: error");
 		break;
 	case HAL_BUSY:
-		logDEBUG("spi status: busy");
+		//logDEBUG("spi status: busy");
 		break;
 	case HAL_TIMEOUT:
-		logDEBUG("spi status: timeout");
+		//logDEBUG("spi status: timeout");
 		break;
 	}
 
@@ -677,16 +843,16 @@ void spi_readStatusRegisters_BLOCKING() {
 
 	switch (status) {
 	case HAL_OK:
-		logDEBUG("spi status: ok");
+		//logDEBUG("spi status: ok");
 		break;
 	case HAL_ERROR:
-		logDEBUG("spi status: error");
+		//logDEBUG("spi status: error");
 		break;
 	case HAL_BUSY:
-		logDEBUG("spi status: busy");
+		//logDEBUG("spi status: busy");
 		break;
 	case HAL_TIMEOUT:
-		logDEBUG("spi status: timeout");
+		//logDEBUG("spi status: timeout");
 		break;
 	}
 
@@ -700,4 +866,107 @@ uint16_t getLastStatusRegister1Value() {
 }
 uint16_t getLastStatusRegister2Value() {
 	return statusRegister2;
+}
+
+//========================= ENCODER ==============================
+void initEncoder() {
+	//HAL_NVIC_DisableIRQ(IR_INC_REF_EXTI_IRQn);
+	HAL_TIM_Base_Start_IT(pEncoder_Counter_handle);
+}
+
+void enableSingleIRQ_encoderSignalA(void (*listener)(void)) {
+	listener_encoderSignalChanged = listener;
+	HAL_NVIC_EnableIRQ(IR_INC_A_EXTI_IRQn);
+}
+
+void enableIRQ_encoderSignalReferencePos(void (*listener)(void)) {
+	listener_encoderInReferencePosition = listener;
+	HAL_NVIC_EnableIRQ(IR_INC_REF_EXTI_IRQn);
+}
+void disableIRQ_encoderSignalReferencePos() {
+	HAL_NVIC_DisableIRQ(IR_INC_REF_EXTI_IRQn);
+	listener_encoderInReferencePosition = 0;
+}
+
+uint8_t waitForEncoderTicks(uint32_t nr_ticks, void (*listener)(void)) {
+	/*if (isBusy_waitForEncoderTicks() != DELAYED_CALLBACK_IS_READY) {
+		return DELAYED_CALLBACK_ERROR;
+	}*/
+
+	__HAL_TIM_SET_COMPARE(pEncoder_Counter_handle, DECODER_COUNT_channel,
+			nr_ticks);
+	listener_waitForEncoderTicks = listener;
+
+	return DELAYED_CALLBACK_REGISTERED;
+}
+uint8_t isBusy_waitForEncoderTicks() {
+	if (listener_waitForEncoderTicks != 0) {
+		return DELAYED_CALLBACK_IS_BUSY;
+	}
+	return DELAYED_CALLBACK_IS_READY;
+}
+
+uint8_t read_encoderSignalA() {
+	return HAL_GPIO_ReadPin(IR_INC_A_GPIO_Port, IR_INC_A_Pin);
+}
+uint8_t read_encoderSignalB() {
+	return HAL_GPIO_ReadPin(DI_INC_B_GPIO_Port, DI_INC_B_Pin);
+}
+uint8_t read_encoderEnable() {
+	return HAL_GPIO_ReadPin(DI_INC_ENABLE_GPIO_Port, DI_INC_ENABLE_Pin);
+}
+uint8_t read_encoderCalibrate() {
+	return HAL_GPIO_ReadPin(DI_INC_CALIBRATE_GPIO_Port, DI_INC_CALIBRATE_Pin);
+}
+
+uint32_t getNrImpulses_encoderSignalA() {
+	return __HAL_TIM_GET_COUNTER(pEncoder_Counter_handle);
+}
+void resetNrImpulses_encoderSignalA() {
+	volatile uint32_t temp = getNrImpulses_encoderSignalA();
+	log_nrImpulsesEncoder(temp);
+	__HAL_TIM_SET_COUNTER(pEncoder_Counter_handle, 0); // reset timer
+}
+
+// calibration
+uint32_t measAnalog_encoderCalibrationPoti_BLOCKING() {
+	HAL_ADC_Start(pMainVoltage_EncoderPoti_ADC_handle);
+	while (1) {
+		if (HAL_ADC_PollForConversion(pMainVoltage_EncoderPoti_ADC_handle, 0)
+				== HAL_OK) {
+			return HAL_ADC_GetValue(pMainVoltage_EncoderPoti_ADC_handle);
+		}
+	}
+}
+void switch_encoderPositionPin(uint8_t state) {
+	HAL_GPIO_WritePin(DO_INC_POSITION_GPIO_Port, DO_INC_POSITION_Pin, state);
+}
+
+// interrupt callbacks
+void encoderReferencePosition_IRQ() {
+	if (listener_encoderInReferencePosition != 0) {
+		listener_encoderInReferencePosition();
+	}
+}
+void encoderSignalA_IRQ() {
+	if (listener_encoderSignalChanged != 0) {
+		void (*temp)(void);
+		temp = listener_encoderSignalChanged;
+		listener_encoderSignalChanged = 0;
+		temp();
+	}
+}
+void encoderTicksCompare_IRQ() {
+	__HAL_TIM_CLEAR_FLAG(pEncoder_Counter_handle,
+			DECODER_COUNT_ir_flag);
+	log_nrImpulsesEncoder(getNrImpulses_encoderSignalA());
+
+	if (listener_waitForEncoderTicks != 0) {
+
+		listener_waitForEncoderTicks = 0;
+		/*void (*temp)(void);
+		temp = listener_waitForEncoderTicks;
+		listener_waitForEncoderTicks = 0;
+		temp();*/
+	}
 }
