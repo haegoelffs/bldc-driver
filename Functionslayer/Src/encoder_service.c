@@ -10,10 +10,10 @@
 #include "bldc_driver_HAL.h"
 #include "bufferedLogger.h"
 // =============== Defines ===============================================
-#define UNREFERENCED -1
+#define N_TICKS_360DEG 360
 
 // =============== Variables =============================================
-uint32_t referencePosition = 0;
+uint32_t nTicks_cal = 0;
 uint32_t timestamp = 0;
 
 // =============== Function pointers =====================================
@@ -29,7 +29,13 @@ void initEncoderService(){
 }
 
 void setReferencePosition(uint32_t position){
-	referencePosition = position;
+	nTicks_cal = position;
+}
+
+uint32_t getRotorPosition(){
+	uint32_t n_timer_corr = (getNrImpulses_encoderSignalA() + nTicks_cal)%(7*N_TICKS_360DEG);
+
+	return n_timer_corr%(N_TICKS_360DEG - 3);
 }
 
 // ISR's
@@ -52,7 +58,7 @@ void handle_rotorInRefPos(void){
 		 * -> min. t_rot_us: 1/466.9 = 2'142us
 		 */
 		if(t_rot_us > 2142 && t_rot_us <= 8388608){
-			uint32_t t_cal_us = (referencePosition*t_rot_us)/360;
+			uint32_t t_cal_us = ((N_TICKS_360DEG - nTicks_cal)*t_rot_us)/N_TICKS_360DEG;
 			/* check overflow:
 			 * max. size referencePosition: 360 = 9bit
 			 * max. size t_rot_us: 32bit - 9bit = 23bit --> 8'388'608us

@@ -100,4 +100,11 @@ uint8_t readStatusOfZeroCrossingSignal(uint8_t phase);
 void initEncoderService();
 void setReferencePosition(uint32_t position);
 
+#define ENCODER_UNREFERENCED -1
+/* Returns the electrical position of the rotor in degrees.
+ *
+ * @return  Value in interval  [0-357] or ENCODER_UNREFERENCED when encoder is unreferenced.
+ */
+uint32_t getRotorPosition();
+
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */
