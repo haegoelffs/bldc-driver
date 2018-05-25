@@ -123,6 +123,7 @@ void entryState(DriveState state) {
 
 	case calibrate_encoder:
 		log_msg("calibrate encoder state active");
+		setPowerLED_blinkingMode();
 		initEncoderService();
 		break;
 	}
@@ -218,7 +219,7 @@ void startup() {
 	 };*/
 	started = 1;
 
-	switch_PowerLED(1);
+	//switch_PowerLED(1);
 
 	// init hardware
 	initUART();
@@ -246,7 +247,7 @@ void startup() {
 	} else if(read_encoderEnable()){
 
 	} else{
-		//changeState(start_up);
+		changeState(start_up);
 	}
 }
 
@@ -289,10 +290,14 @@ void proceed() {
 
 			break;
 		case calibrate_encoder:;
-			uint32_t calibrationPoti = measAnalog_encoderCalibrationPoti_BLOCKING();
-
+			uint32_t poti = getReferencePositionEncoder();
+			log_unnamedUint(poti);
+			setReferencePosition(poti);
 			break;
 	}
+
+
+
 
 	proceedInterfaceService();
 

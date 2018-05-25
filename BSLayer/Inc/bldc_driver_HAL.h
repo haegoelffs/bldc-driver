@@ -175,6 +175,8 @@ void abort_delayedCallback_B();
 void abort_delayedCallback_C();
 void abort_delayedCallback_D();
 
+void waitBLOCKING(uint32_t ms);
+
 //========================= UART ===================================
 void initUART();
 void transmitCharOverUART(char data);
@@ -228,7 +230,7 @@ void enableSingleIRQ_encoderSignalA(void (*listener)(void));
 void enableIRQ_encoderSignalReferencePos(void (*listener)(void));
 void disableIRQ_encoderSignalReferencePos();
 
-void registerListener_oneElectricRotation(void (*listener)(void));
+void registerListener_rotated180Deg(void (*listener)(void));
 
 uint8_t read_encoderSignalA();
 uint8_t read_encoderSignalB();
@@ -236,9 +238,11 @@ uint8_t read_encoderEnable();
 uint8_t read_encoderCalibrate();
 
 uint32_t getNrImpulses_encoderSignalA();
+void setNrImpulses_encoderSignalA(uint16_t nrImpulses);
 void resetNrImpulses_encoderSignalA();
 
 // calibration
+#define MAX_CALIBRATION_POTI_VALUE 0b111111111111 // 12bit ADC
 uint32_t measAnalog_encoderCalibrationPoti_BLOCKING();
 void switch_encoderPositionPin(uint8_t state);
 

@@ -59,6 +59,7 @@
 #define NAME_SECTION_5_ACTIVE 'S'
 
 #define NAME_NR_IMPULSES_ENCODER 'T'
+#define NAME_UNNAMED 'U'
 
 // =============== Variables =============================================
 Ringbuffer *pRingbuffer;
@@ -226,6 +227,21 @@ void log_controllerParameterTuple_mr(uint32_t nrIgnoredCalls, uint32_t t60Deg,
 		log_controllerParameterTuple(t60Deg, rotorpos, rotorpos_setpoint, controller_out);
 		cnt = 0;
 	}
+#endif
+}
+
+void log_unnamedUint(uint32_t data){
+#ifdef LOG_NR_IMPULSES_ENCODER
+	addCharToRingbuffer(STX);
+	addUnsignedToRingbuffer(getTimestamp());
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(NAME_UNNAMED);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addCharToRingbuffer(TYPE_INT);
+	addCharToRingbuffer(RECORD_SEPERATOR);
+	addUnsignedToRingbuffer(data);
+	addCharToRingbuffer(GROUP_SEPERATOR);
+	addCharToRingbuffer(ETX);
 #endif
 }
 

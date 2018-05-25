@@ -40,6 +40,10 @@ void log_controllerParameterTuple_mr(uint32_t max_resolution_us, uint32_t t60Deg
 
 void log_nrImpulsesEncoder(uint32_t nrImpulses);
 
+void log_unsignedInt(uint32_t data);
+
+void log_unnamedUint(uint32_t data);
+
 // events
 void log_zeroCrossingPhaseA(uint32_t timestamp);
 void log_zeroCrossingPhaseB(uint32_t timestamp);

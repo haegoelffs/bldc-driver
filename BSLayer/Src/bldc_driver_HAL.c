@@ -35,7 +35,7 @@ static UART_HandleTypeDef *pUART_handle;
 // decoder callbacks
 static void (*listener_encoderInReferencePosition)(void);
 static void (*listener_encoderSignalChanged)(void);
-static void (*listener_waitForEncoderTicks)(void);
+static void (*listener_rotated180Deg)(void);
 
 // comperator interrupt listeners
 static void (*listenerPhaseA)(uint8_t edge);
@@ -153,6 +153,10 @@ uint8_t read_PWRGD_BridgeDriver() {
 // main interface
 uint8_t read_StateButton() {
 	return HAL_GPIO_ReadPin(DI_USER_IN_GPIO_Port, DI_USER_IN_Pin);
+}
+
+uint8_t read_MainButton() {
+	return 1;
 }
 
 //========================= UART ===================================
@@ -670,6 +674,10 @@ void abort_delayedCallback_D() {
 	listener_delayed_callback_D = 0;
 }
 
+void waitBLOCKING(uint32_t ms){
+	HAL_Delay(ms);
+}
+
 // callbacks adapter
 void callbackTimer_interrupt() {
 	if (listener_callback_timer != 0) {
@@ -870,7 +878,6 @@ uint16_t getLastStatusRegister2Value() {
 
 //========================= ENCODER ==============================
 void initEncoder() {
-	//HAL_NVIC_DisableIRQ(IR_INC_REF_EXTI_IRQn);
 	HAL_TIM_Base_Start_IT(pEncoder_Counter_handle);
 }
 
@@ -888,22 +895,8 @@ void disableIRQ_encoderSignalReferencePos() {
 	listener_encoderInReferencePosition = 0;
 }
 
-uint8_t waitForEncoderTicks(uint32_t nr_ticks, void (*listener)(void)) {
-	/*if (isBusy_waitForEncoderTicks() != DELAYED_CALLBACK_IS_READY) {
-		return DELAYED_CALLBACK_ERROR;
-	}*/
-
-	__HAL_TIM_SET_COMPARE(pEncoder_Counter_handle, DECODER_COUNT_channel,
-			nr_ticks);
-	listener_waitForEncoderTicks = listener;
-
-	return DELAYED_CALLBACK_REGISTERED;
-}
-uint8_t isBusy_waitForEncoderTicks() {
-	if (listener_waitForEncoderTicks != 0) {
-		return DELAYED_CALLBACK_IS_BUSY;
-	}
-	return DELAYED_CALLBACK_IS_READY;
+void registerListener_rotated180Deg(void (*listener)(void)){
+	listener_rotated180Deg = listener;
 }
 
 uint8_t read_encoderSignalA() {
@@ -923,9 +916,10 @@ uint32_t getNrImpulses_encoderSignalA() {
 	return __HAL_TIM_GET_COUNTER(pEncoder_Counter_handle);
 }
 void resetNrImpulses_encoderSignalA() {
-	volatile uint32_t temp = getNrImpulses_encoderSignalA();
-	log_nrImpulsesEncoder(temp);
 	__HAL_TIM_SET_COUNTER(pEncoder_Counter_handle, 0); // reset timer
+}
+void setNrImpulses_encoderSignalA(uint16_t nrImpulses){
+	__HAL_TIM_SET_COUNTER(pEncoder_Counter_handle, nrImpulses);
 }
 
 // calibration
@@ -957,16 +951,7 @@ void encoderSignalA_IRQ() {
 	}
 }
 void encoderTicksCompare_IRQ() {
-	__HAL_TIM_CLEAR_FLAG(pEncoder_Counter_handle,
-			DECODER_COUNT_ir_flag);
-	log_nrImpulsesEncoder(getNrImpulses_encoderSignalA());
-
-	if (listener_waitForEncoderTicks != 0) {
-
-		listener_waitForEncoderTicks = 0;
-		/*void (*temp)(void);
-		temp = listener_waitForEncoderTicks;
-		listener_waitForEncoderTicks = 0;
-		temp();*/
+	if (listener_rotated180Deg != 0) {
+		listener_rotated180Deg();
 	}
 }

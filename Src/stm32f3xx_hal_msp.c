@@ -96,15 +96,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     }
   
     /**ADC1 GPIO Configuration    
-    PC2     ------> ADC1_IN8
     PA0     ------> ADC1_IN1
     PA3     ------> ADC1_IN4 
     */
-    GPIO_InitStruct.Pin = ADC_INC_CALIBRATE_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(ADC_INC_CALIBRATE_GPIO_Port, &GPIO_InitStruct);
-
     GPIO_InitStruct.Pin = ADC_SHUNT_A_Pin|ADC_HALL_B_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -126,12 +120,13 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     }
   
     /**ADC2 GPIO Configuration    
-    PC1     ------> ADC2_IN7 
+    PC1     ------> ADC2_IN7
+    PC2     ------> ADC2_IN8 
     */
-    GPIO_InitStruct.Pin = ADC_MAIN_VOLTAGE_Pin;
+    GPIO_InitStruct.Pin = ADC_MAIN_VOLTAGE_Pin|ADC_INC_CALIBRATE_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(ADC_MAIN_VOLTAGE_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* USER CODE BEGIN ADC2_MspInit 1 */
 
@@ -203,12 +198,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     **/
   
     /**ADC1 GPIO Configuration    
-    PC2     ------> ADC1_IN8
     PA0     ------> ADC1_IN1
     PA3     ------> ADC1_IN4 
     */
-    HAL_GPIO_DeInit(ADC_INC_CALIBRATE_GPIO_Port, ADC_INC_CALIBRATE_Pin);
-
     HAL_GPIO_DeInit(GPIOA, ADC_SHUNT_A_Pin|ADC_HALL_B_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
@@ -228,9 +220,10 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     **/
   
     /**ADC2 GPIO Configuration    
-    PC1     ------> ADC2_IN7 
+    PC1     ------> ADC2_IN7
+    PC2     ------> ADC2_IN8 
     */
-    HAL_GPIO_DeInit(ADC_MAIN_VOLTAGE_GPIO_Port, ADC_MAIN_VOLTAGE_Pin);
+    HAL_GPIO_DeInit(GPIOC, ADC_MAIN_VOLTAGE_Pin|ADC_INC_CALIBRATE_Pin);
 
   /* USER CODE BEGIN ADC2_MspDeInit 1 */
 

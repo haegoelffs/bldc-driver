@@ -18,6 +18,15 @@ uint8_t getDebouncedMainSwitchState();
 uint8_t getDebouncedStateSwitchState();
 uint32_t getUserInValue();
 
+void setPowerLED_blinkingMode();
+void setPowerLED_continiousMode();
+
+/** Returns the calibrated reference position of the encoder.
+ *
+ * @return Value in interval  [0-360]
+ */
+uint32_t getReferencePositionEncoder();
+
 //========================= TIME ===================================
 uint32_t getTimestamp();
 uint32_t calculateDeltaTime(uint32_t start_timestamp);
@@ -89,6 +98,6 @@ uint8_t readStatusOfZeroCrossingSignal(uint8_t phase);
 
 //========================= ENCODER ===================================
 void initEncoderService();
-void setReferencePositionOffset(uint32_t newOffset);
+void setReferencePosition(uint32_t position);
 
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */
