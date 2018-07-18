@@ -7,7 +7,7 @@
 // =============== Includes ==============================================
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 // =============== Defines ===============================================
 
 // =============== Variables =============================================
@@ -36,7 +36,7 @@ void timerCallback();
 
 // =============== Functions =============================================
 void initPhaseControllService() {
-	log_msg("phasencontrol service initialized.");
+	logMsg_debug("phasencontrol service initialized.");
 }
 
 void changePhaseState(uint8_t newPhaseSection) {
@@ -109,7 +109,6 @@ void switchPhases(uint8_t forward_backward_selecter) {
 
 	changePhaseState(nextSection);
 	timestampStartSection = getTimestamp();
-	log_sectionActive(timestampStartSection, nextSection);
 }
 
 void control3PhaseSinusApproximation(uint8_t start_stop_selecter) {

@@ -8,7 +8,7 @@
 // =============== Includes ==============================================
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 // =============== Defines ===============================================
 #define N_TICKS_360DEG 360
 

@@ -8,7 +8,7 @@
 #include "bldc_driver_HAL.h"
 
 #include "main.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 
 #include "bldc_driver_adapter.h"
 

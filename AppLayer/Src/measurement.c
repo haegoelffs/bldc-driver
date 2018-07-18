@@ -9,7 +9,7 @@
 
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 
 // =============== Defines ===============================================
 #define MAX_ZERO_CROSSINGS 5
@@ -89,7 +89,7 @@ void handle_zeroCrossing_phaseA(volatile uint8_t edge) {
 	volatile uint8_t section = getActiveSection();
 
 	uint32_t tempTimestamp = getTimestamp();
-	log_zeroCrossingPhaseA(tempTimestamp);
+	logEvent_compA_IR();
 
 	switch (section) {
 	case SECTION_1_ACTIVE:
@@ -113,7 +113,7 @@ void handle_zeroCrossing_phaseB(volatile uint8_t edge) {
 	volatile uint8_t section = getActiveSection();
 
 	uint32_t tempTimestamp = getTimestamp();
-	log_zeroCrossingPhaseB(tempTimestamp);
+	logEvent_compB_IR();
 
 	switch (section) {
 	case SECTION_0_ACTIVE:
@@ -137,7 +137,7 @@ void handle_zeroCrossing_phaseC(volatile uint8_t edge) {
 	volatile uint8_t section = getActiveSection();
 
 	uint32_t tempTimestamp = getTimestamp();
-	log_zeroCrossingPhaseC(tempTimestamp);
+	logEvent_compC_IR();
 
 	switch (section) {
 	case SECTION_2_ACTIVE:

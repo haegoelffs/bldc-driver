@@ -124,4 +124,8 @@ void initCurrentServiceService();
 
 void startCurrentMeasurement();
 
+//======================= SYNC ========================================
+void startUninterruptibleSection();
+void finishUninterruptibleSection();
+
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */

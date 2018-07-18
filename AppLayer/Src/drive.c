@@ -8,7 +8,7 @@
 #include "drive.h"
 
 #include "drive_state.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 #include "measurement.h"
 #include "pwrControl.h"
 
@@ -42,7 +42,7 @@ void changeTiming(uint32_t timing);
 
 // =============== Functions =============================================
 void initDrive() {
-	log_msg("init drive...");
+	logMsg_debug("init drive...");
 	changeState(off);
 
 	if (getDebouncedCalibrateJumper()) {
@@ -54,8 +54,7 @@ void initDrive() {
 	} else {
 		// running mode without encoder
 		uint32_t poti = getReferencePositionEncoder();
-		log_namedUint("Reference position encoder", poti, 50);
-		log_unnamedUint(poti);
+		logData_encoderPos(poti);
 		setReferencePosition(poti);
 
 		//changeState(start_up);
@@ -129,10 +128,10 @@ void proceedController(volatile uint32_t rotorpos) {
 
 // statemachine & transitions
 void entryState(DriveState state) {
+	logData_entryNewState(state);
+
 	switch (state) {
 	case off:
-		log_msg("off state active");
-
 		setPowerLED_continiousMode();
 
 		switch_Enable_BridgeDriver(0);
@@ -143,12 +142,9 @@ void entryState(DriveState state) {
 		break;
 
 	case stopped:
-		log_msg("stopped state active");
 		break;
 
 	case start_up:
-		log_msg("start up state active");
-
 		time60deg = TIME_60DEG_SPEED_UP_START; //us
 		setSinusApproximation60DegTime(time60deg);
 
@@ -158,21 +154,17 @@ void entryState(DriveState state) {
 		break;
 
 	case synchronized:
-		log_msg("synchronized state active");
 		break;
 
 	case controlled_negative_torque:
-		log_msg("controlled negative torque state active");
 		break;
 
 	case controlled_positive_torque:
-		log_msg("controlled positive torque state active");
 		setPowerlevelImmediately(70);
 		enableMeasurement(1);
 		break;
 
 	case calibrate_encoder:
-		log_msg("calibrate encoder state active");
 		changeToCalibrationMode();
 		setPowerLED_blinkingMode();
 		break;
@@ -300,9 +292,9 @@ void startup() {
 
 	// init hardware
 	initUART();
-	initBufferedLogger();
+	initLogger();
 
-	log_msg("Startup BLDC driver...");
+	logMsg_debug("Startup BLDC driver...");
 
 	initSystime();
 	initAnalog();
@@ -354,7 +346,7 @@ void proceed() {
 		time60deg = (TIME_60DEG_SPEED_UP_START - deltaTime / GRADIENT_DIVIDER);
 		setSinusApproximation60DegTime(time60deg);
 
-		log_time60Deg(time60deg);
+		logData_time60Deg(time60deg);
 
 		if (time60deg < TIME_60DEG_SPEED_UP_END) {
 			changeState(controlled_positive_torque);
@@ -369,11 +361,10 @@ void proceed() {
 		break;
 	case calibrate_encoder: {
 		uint32_t poti = getReferencePositionEncoder();
-		log_unnamedUint(poti);
 		setReferencePosition(poti);
 	}
 		break;
 	}
 
-	log_writeBuffered();
+	logger_writeBuffered();
 }

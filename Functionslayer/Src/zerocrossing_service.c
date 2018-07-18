@@ -7,7 +7,7 @@
 // =============== Defines ===============================================
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 
 // =============== Defines ===============================================
 
@@ -32,7 +32,7 @@ static void handle_delayedCallback_C();
 
 // =============== Functions =============================================
 void initZeroCrossingService() {
-	log_msg("zero crossing service initialized.");
+	logMsg_debug("zero crossing service initialized.");
 
 	register_comperatorListener_phaseA(&handle_comparator_A);
 	register_comperatorListener_phaseB(&handle_comparator_B);

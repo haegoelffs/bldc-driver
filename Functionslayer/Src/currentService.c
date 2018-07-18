@@ -10,7 +10,7 @@
 
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 #include "utils.h"
 
 // =============== Defines ===============================================
@@ -30,7 +30,7 @@ uint8_t callbackCnt;
 uint32_t lastValue_A;
 uint32_t lastValue_B;
 
-static void (*listener_newCurrentData)(int32_t phaseA, int32_t phaseB, int32_t phaseC);
+static void (*listener_newCurrentData)(int32_t phaseA, int32_t phaseB);
 
 // =============== Function pointers =====================================
 
@@ -42,10 +42,7 @@ void calculateCurrentOfPhases(void);
 
 // =============== Functions =============================================
 void initCurrentServiceService(){
-	for(int loopCnt = 0; loopCnt < NR_MEASUREMENTS; loopCnt++){
-		pBuffer_A[loopCnt] = 0;
-		pBuffer_B[loopCnt] = 0;
-	}
+	logMsg_debug("init current Service...");
 
 	registerListener_newMeasData_hallA(&callback_phaseA);
 	registerListener_newMeasData_hallB(&callback_phaseB);
@@ -66,9 +63,10 @@ void calculateCurrentOfPhases(){
 
 	int32_t current_phaseA_mA = voltage_phaseA_mV * CURRENT_TO_VOLTAGE_RATIO;
 	int32_t current_phaseB_mA = voltage_phaseB_mV * CURRENT_TO_VOLTAGE_RATIO;
-	int32_t current_phaseC_mA = (current_phaseA_mA+current_phaseB_mA)*(-1);
 
-	listener_newCurrentData(current_phaseA_mA, current_phaseB_mA, current_phaseC_mA);
+	logData_current(current_phaseA_mA, current_phaseB_mA);
+
+	listener_newCurrentData(current_phaseA_mA, current_phaseB_mA);
 }
 
 void callback_phaseA(void){
@@ -79,7 +77,6 @@ void callback_phaseA(void){
 
 	if(callbackCnt == 2){
 		calculateCurrentOfPhases();
-		log_msg("haha");
 	}
 }
 
@@ -91,6 +88,5 @@ void callback_phaseB(void){
 
 	if(callbackCnt == 2){
 		calculateCurrentOfPhases();
-		log_msg("haha");
 	}
 }

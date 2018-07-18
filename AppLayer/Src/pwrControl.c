@@ -6,7 +6,7 @@
  */
 
 #include "pwrControl.h"
-#include "bufferedLogger.h"
+#include "logger.h"
 
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
