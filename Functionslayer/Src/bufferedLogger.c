@@ -1,6 +1,7 @@
 // =============== Includes ==============================================
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "bldc_driver_functions.h"
 #include "bldc_driver_HAL.h"
@@ -94,6 +95,13 @@ void log_msg(char *pMsg) {
 #endif
 }
 
+void log_namedUint(char *pName, uint32_t value, uint32_t size) {
+	char pString[size];
+	sprintf(pString, "%s:%lu", pName, value);
+
+	log_msg(pString);
+}
+
 void log_time60Deg(uint32_t t60Deg) {
 #ifdef LOG_TIME60DEG
 	addCharToRingbuffer(STX);
@@ -153,7 +161,7 @@ void log_maxCycleTimeStatistics(uint32_t max_resolution_us, uint32_t cycleTime) 
 #endif
 }
 
-void log_nrImpulsesEncoder(uint32_t nrImpulses){
+void log_nrImpulsesEncoder(uint32_t nrImpulses) {
 #ifdef LOG_NR_IMPULSES_ENCODER
 	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
@@ -176,7 +184,7 @@ void log_nrImpulsesEncoder(uint32_t nrImpulses){
 //		F<RS>1<RS>4294967272<GS>
 // <ETX>
 void log_controllerParameterTuple(uint32_t t60Deg, uint32_t rotorpos,
-		uint32_t rotorpos_setpoint, int32_t controller_out) {
+		uint32_t rotorpos_setpoint) {
 #ifdef LOG_CONTROLLER_PARAMETER_TUPLE
 	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
@@ -219,18 +227,18 @@ void log_controllerParameterTuple(uint32_t t60Deg, uint32_t rotorpos,
 }
 
 void log_controllerParameterTuple_mr(uint32_t nrIgnoredCalls, uint32_t t60Deg,
-		uint32_t rotorpos, uint32_t rotorpos_setpoint, int32_t controller_out) {
+		uint32_t rotorpos, uint32_t rotorpos_setpoint) {
 #ifdef LOG_CONTROLLER_PARAMETER_TUPLE
 	static uint32_t cnt;
 	cnt++;
-	if(cnt >= nrIgnoredCalls) {
-		log_controllerParameterTuple(t60Deg, rotorpos, rotorpos_setpoint, controller_out);
+	if (cnt >= nrIgnoredCalls) {
+		log_controllerParameterTuple(t60Deg, rotorpos, rotorpos_setpoint);
 		cnt = 0;
 	}
 #endif
 }
 
-void log_unnamedUint(uint32_t data){
+void log_unnamedUint(uint32_t data) {
 #ifdef LOG_NR_IMPULSES_ENCODER
 	addCharToRingbuffer(STX);
 	addUnsignedToRingbuffer(getTimestamp());
@@ -309,42 +317,42 @@ void log_sectionActive(uint32_t timestamp, uint8_t section) {
 	char sectionName;
 
 	switch (section) {
-	case 0:
+		case 0:
 #ifdef LOG_SECTION_0_ACTIVE
 		sectionName = NAME_SECTION_0_ACTIVE;
 		break;
 #else
 		return;
 #endif
-	case 1:
+		case 1:
 #ifdef LOG_SECTION_1_ACTIVE
 		sectionName = NAME_SECTION_1_ACTIVE;
 		break;
 #else
 		return;
 #endif
-	case 2:
+		case 2:
 #ifdef LOG_SECTION_2_ACTIVE
 		sectionName = NAME_SECTION_2_ACTIVE;
 		break;
 #else
 		return;
 #endif
-	case 3:
+		case 3:
 #ifdef LOG_SECTION_3_ACTIVE
 		sectionName = NAME_SECTION_3_ACTIVE;
 		break;
 #else
 		return;
 #endif
-	case 4:
+		case 4:
 #ifdef LOG_SECTION_4_ACTIVE
 		sectionName = NAME_SECTION_4_ACTIVE;
 		break;
 #else
 		return;
 #endif
-	case 5:
+		case 5:
 #ifdef LOG_SECTION_5_ACTIVE
 		sectionName = NAME_SECTION_5_ACTIVE;
 		break;

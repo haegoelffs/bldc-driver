@@ -14,6 +14,7 @@
 void initPWM();
 
 #define MAX_PWM_DUTYCYCLE 1800
+#define MIN_PWM_DUTYCYCLE 0
 void set_PWM_DutyCycle(uint16_t dutyCycle);
 
 /** Enables the pwm output for the phase A
@@ -33,22 +34,14 @@ void enable_PWM_phaseC_LS(uint8_t enable);
 void initAnalog();
 
 // listener
-void registerListener_newMeasData_hallA_shuntB(void (*listener)(void));
-void registerListener_newMeasData_hallB_shuntA(void (*listener)(void));
-
-// shunt
-int8_t start_phaseACurrentMeas_shunt();
-int8_t start_phaseBCurrentMeas_shunt();
-
-uint32_t getLastMeas_phaseACurrentMeas_shunt();
-uint32_t getLastMeas_phaseBCurrentMeas_shunt();
+void registerListener_newMeasData_hallA(void (*listener)(void));
+void registerListener_newMeasData_hallB(void (*listener)(void));
 
 // hall
-int8_t start_phaseACurrentMeas_hall();
-int8_t start_phaseBCurrentMeas_hall();
-
-uint32_t getLastMeas_phaseACurrentMeas_hall();
-uint32_t getLastMeas_phaseBCurrentMeas_hall();
+#define ADC_MEASUREMENT_STARTED 0
+#define ADC_ERROR -1
+int8_t start_phaseACurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer);
+int8_t start_phaseBCurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer);
 
 // user voltage in
 int8_t start_userVolatgeMeas();
@@ -147,14 +140,6 @@ void switch_StatusLED4(uint8_t state);
 //========================= SYSTIME ===================================
 void initSystime();
 uint32_t getSystimeUs();
-
-/** Calls the handed function after the handed time
-Parameter:
-time_ us    = time in us. max value: 2¹⁶ * 4 = 262'144us.
-fn          = callback. Called after the handed time.
-*/
-void startAfterUs(uint32_t time_us, void (*fn)(void));
-uint32_t getElapsedTimeInUs();
 
 #define DELAYED_CALLBACK_REGISTERED 1
 #define DELAYED_CALLBACK_ERROR 2

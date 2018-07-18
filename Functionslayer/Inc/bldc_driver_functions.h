@@ -16,6 +16,11 @@ void proceedInterfaceService();
 
 uint8_t getDebouncedMainSwitchState();
 uint8_t getDebouncedStateSwitchState();
+uint8_t getDebouncedEnableEncoderJumper();
+uint8_t getDebouncedCalibrateJumper();
+
+int32_t getTorqueSetPoint();
+
 uint32_t getUserInValue();
 
 void setPowerLED_blinkingMode();
@@ -28,8 +33,12 @@ void setPowerLED_continiousMode();
 uint32_t getReferencePositionEncoder();
 
 //========================= TIME ===================================
+void initTimeService();
+
 uint32_t getTimestamp();
 uint32_t calculateDeltaTime(uint32_t start_timestamp);
+
+uint8_t unblockingDelay(uint32_t time_us, void (*listener)(void));
 
 //========================= PHASE CONTROLL ===================================
 void initPhaseControllService();
@@ -100,11 +109,19 @@ uint8_t readStatusOfZeroCrossingSignal(uint8_t phase);
 void initEncoderService();
 void setReferencePosition(uint32_t position);
 
+void changeToCalibrationMode();
+
 #define ENCODER_UNREFERENCED -1
 /* Returns the electrical position of the rotor in degrees.
  *
  * @return  Value in interval  [0-357] or ENCODER_UNREFERENCED when encoder is unreferenced.
  */
-uint32_t getRotorPosition();
+int32_t getRotorPosition();
+int32_t getRotorPositionSetPointOfSectionInZeroCrossing(uint8_t section);
+
+//========================= CURRENT ===================================
+void initCurrentServiceService();
+
+void startCurrentMeasurement();
 
 #endif /* INC_BLDC_DRIVER_FUNCTIONS_H_ */

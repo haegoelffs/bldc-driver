@@ -24,8 +24,8 @@
 #define MAX_T_60_DEG 5000
 
 // _controller options____________________________________________________
-#define P_DIVIDER 80
-#define I_DIVIDER 60000
+#define P_DIVIDER 32
+#define I_DIVIDER 256
 //#define D_DIVIDER 32768
 
 // =============== Variables =============================================
@@ -38,11 +38,60 @@ static uint32_t timestamp_entryState;
 // =============== Function Pointers =====================================
 
 // =============== Function Declarations =================================
+void changeTiming(uint32_t timing);
 
 // =============== Functions =============================================
 void initDrive() {
 	log_msg("init drive...");
 	changeState(off);
+
+	if (getDebouncedCalibrateJumper()) {
+		// calibrate encoder mode
+		changeState(calibrate_encoder);
+	} else if (getDebouncedEnableEncoderJumper()) {
+		// running mode with encoder
+
+	} else {
+		// running mode without encoder
+		uint32_t poti = getReferencePositionEncoder();
+		log_namedUint("Reference position encoder", poti, 50);
+		log_unnamedUint(poti);
+		setReferencePosition(poti);
+
+		//changeState(start_up);
+
+
+		startCurrentMeasurement();
+	}
+}
+
+void proceedRotorPosController(volatile uint32_t rotorpos_deg) {
+	volatile uint32_t target_deg = 30 - TIMING;
+
+	volatile int32_t fault = (target_deg - rotorpos_deg);
+
+	volatile int32_t controllerOut = (fault / P_DIVIDER);
+
+#ifdef I_DIVIDER
+	// integrator active
+	volatile static int32_t fault_I;
+	fault_I = fault_I + fault;
+	controllerOut += fault_I / I_DIVIDER;
+#endif
+#ifdef D_DIVIDER
+	// differentiator active
+	static int32_t last_fault;
+	controllerOut += (fault-last_fault)/D_DIVIDER;
+#endif
+
+	time60deg = time60deg - controllerOut;
+	setSinusApproximation60DegTime(time60deg);
+
+	if (time60deg > MAX_T_60_DEG) {
+		// too slow
+		control3PhaseSinusApproximation(STOP_SIN_APPROX);
+		changeState(off);
+	}
 }
 
 void proceedController(volatile uint32_t rotorpos) {
@@ -75,8 +124,7 @@ void proceedController(volatile uint32_t rotorpos) {
 	}
 
 	//log_controllerParameterTuple_mr(5, time60deg, rotorpos, targetTime, controllerOut);
-	log_controllerParameterTuple(time60deg, rotorpos, targetTime,
-			controllerOut);
+	//log_controllerParameterTuple(time60deg, rotorpos, targetTime,controllerOut);
 }
 
 // statemachine & transitions
@@ -85,9 +133,12 @@ void entryState(DriveState state) {
 	case off:
 		log_msg("off state active");
 
+		setPowerLED_continiousMode();
+
 		switch_Enable_BridgeDriver(0);
 		enableMeasurement(0);
-		setPowerlevel(OFF_POWER_LEVEL);
+
+		setPowerlevelImmediately(OFF_POWER_LEVEL);
 		control3PhaseSinusApproximation(STOP_SIN_APPROX);
 		break;
 
@@ -99,11 +150,10 @@ void entryState(DriveState state) {
 		log_msg("start up state active");
 
 		time60deg = TIME_60DEG_SPEED_UP_START; //us
-
 		setSinusApproximation60DegTime(time60deg);
 
 		switch_Enable_BridgeDriver(1);
-		setPowerlevel(MAX_POWER_LEVEL);
+		setPowerlevelImmediately(70);
 		control3PhaseSinusApproximation(START_SIN_APPROX_FORWARD);
 		break;
 
@@ -117,14 +167,14 @@ void entryState(DriveState state) {
 
 	case controlled_positive_torque:
 		log_msg("controlled positive torque state active");
-
+		setPowerlevelImmediately(70);
 		enableMeasurement(1);
 		break;
 
 	case calibrate_encoder:
 		log_msg("calibrate encoder state active");
+		changeToCalibrationMode();
 		setPowerLED_blinkingMode();
-		initEncoderService();
 		break;
 	}
 }
@@ -146,7 +196,7 @@ void exitState(DriveState state) {
 		break;
 	case calibrate_encoder:
 
-			break;
+		break;
 	}
 }
 
@@ -162,15 +212,30 @@ void changeState(DriveState newState) {
 // callbacks
 void inform_newRotorPos(uint32_t time) {
 	switch (activeState) {
-	case controlled_positive_torque:
-		//proceedController(time);
-		//setSinusApproximation60DegTime(time60deg);
+	case controlled_positive_torque: {
+		// convert time to angle
+		/*uint8_t activeSection = getActiveSection();
 
-		/*if (time60deg > MAX_T_60_DEG) {
-		 // too slow
-		 control3PhaseSinusApproximation(STOP_SIN_APPROX);
-		 changeState(off);
-		 }*/
+
+		uint32_t rotorPos_backEMF = (time * 60) / time60deg;
+		uint32_t rotorPos_encoder = getRotorPosition();
+
+		// calculate setpoint (with timing)
+		int32_t rotorPos_setPoint = getRotorPositionSetPointOfSectionInZeroCrossing(activeSection) + TIMING;
+#if (TIMING != 0)
+		if(rotorPos_setPoint < 0){
+			rotorPos_setPoint += 360;
+		}
+#endif
+
+		// calculate error angle
+
+
+		//proceedRotorPosController(rotorPos_encoder);
+
+		log_controllerParameterTuple(time60deg, rotorPos_backEMF,
+				rotorPos_encoder);*/
+	}
 		break;
 	default:
 		// do nothing
@@ -180,7 +245,13 @@ void inform_newRotorPos(uint32_t time) {
 void informRotorTooEarly() {
 	switch (activeState) {
 	case controlled_positive_torque:
-		proceedController(0);
+		;
+		uint32_t rotorPos_backEMF = 0;
+		uint32_t rotorPos_encoder = getRotorPosition();
+
+		//proceedRotorPosController(rotorPos_encoder);
+
+		//log_controllerParameterTuple(time60deg, rotorPos_backEMF, rotorPos_encoder);
 		break;
 	default:
 		// do nothing
@@ -190,7 +261,13 @@ void informRotorTooEarly() {
 void informRotorTooLate() {
 	switch (activeState) {
 	case controlled_positive_torque:
-		proceedController(time60deg);
+		;
+		uint32_t rotorPos_backEMF = 60;
+		uint32_t rotorPos_encoder = getRotorPosition();
+
+		//proceedRotorPosController(rotorPos_encoder);
+
+		//log_controllerParameterTuple(time60deg, rotorPos_backEMF,rotorPos_encoder);
 		break;
 	default:
 		// do nothing
@@ -234,21 +311,17 @@ void startup() {
 	initInterfaceService();
 	initZeroCrossingService();
 	initPhaseControllService();
+	initCurrentServiceService();
 
 	// init rest of software
 	initDrive();
+	initEncoderService();
 
 	initMeasurement();
 	register_rotorPosMeas_listener_ISR(&inform_newRotorPos,
 			&informRotorTooEarly, &informRotorTooLate);
 
-	if(read_encoderCalibrate()){
-		changeState(calibrate_encoder);
-	} else if(read_encoderEnable()){
 
-	} else{
-		changeState(start_up);
-	}
 }
 
 void proceed() {
@@ -257,49 +330,50 @@ void proceed() {
 		return;
 	}
 
-	// measure last cycletime
-	/*uint32_t timestamp = getTimestamp();
-	 if(timestamp != 0){
-	 log_maxCycleTimeStatistics(1000000, calculateDeltaTime(timestamp));
-	 }*/
-
-
+	// proceed all services
+	proceedInterfaceService();
 
 	switch (activeState) {
-		case off:
-			break;
-		case stopped:
-			break;
-		case start_up:
-			;
-			uint32_t deltaTime = calculateDeltaTime(timestamp_entryState);
-			time60deg = (TIME_60DEG_SPEED_UP_START - deltaTime / GRADIENT_DIVIDER);
-			setSinusApproximation60DegTime(time60deg);
+	case off: {
+		int32_t torqueSP = getTorqueSetPoint();
 
-			log_time60Deg(time60deg);
+		if (torqueSP > 0) {
+			//changeState(start_up);
+		} else if (torqueSP < 0) {
 
-			if (time60deg < TIME_60DEG_SPEED_UP_END) {
-				changeState(controlled_positive_torque);
-			}
-			break;
-		case synchronized:
-			break;
-		case controlled_negative_torque:
-			break;
-		case controlled_positive_torque:
-
-			break;
-		case calibrate_encoder:;
-			uint32_t poti = getReferencePositionEncoder();
-			log_unnamedUint(poti);
-			setReferencePosition(poti);
-			break;
+		}
 	}
+		break;
+	case stopped: {
 
+	}
+		break;
+	case start_up:
+		;
+		uint32_t deltaTime = calculateDeltaTime(timestamp_entryState);
+		time60deg = (TIME_60DEG_SPEED_UP_START - deltaTime / GRADIENT_DIVIDER);
+		setSinusApproximation60DegTime(time60deg);
 
+		log_time60Deg(time60deg);
 
+		if (time60deg < TIME_60DEG_SPEED_UP_END) {
+			changeState(controlled_positive_torque);
+		}
+		break;
+	case synchronized:
+		break;
+	case controlled_negative_torque:
+		break;
+	case controlled_positive_torque:
 
-	proceedInterfaceService();
+		break;
+	case calibrate_encoder: {
+		uint32_t poti = getReferencePositionEncoder();
+		log_unnamedUint(poti);
+		setReferencePosition(poti);
+	}
+		break;
+	}
 
 	log_writeBuffered();
 }

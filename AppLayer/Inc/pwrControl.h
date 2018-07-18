@@ -10,9 +10,11 @@
 
 #include <stdint.h>
 
-#define MAX_POWER_LEVEL 255
+#define MAX_POWER_LEVEL 100
 #define OFF_POWER_LEVEL 0
-
 void setPowerlevel(uint8_t powerLevel);
+void setPowerlevelImmediately(uint8_t powerLevel);
+
+void proceedPowerControl();
 
 #endif /* INC_PWRCONTROL_H_ */

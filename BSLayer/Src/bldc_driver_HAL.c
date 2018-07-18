@@ -13,8 +13,8 @@
 #include "bldc_driver_adapter.h"
 
 // hal handles
-static ADC_HandleTypeDef *pShuntA_hallB_ADC_handle;
-static ADC_HandleTypeDef *pShuntB_hallA_ADC_handle;
+static ADC_HandleTypeDef *pHallB_ADC_handle;
+static ADC_HandleTypeDef *pHallA_ADC_handle;
 static ADC_HandleTypeDef *pUser_ADC_handle;
 static ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle;
 
@@ -43,17 +43,16 @@ static void (*listenerPhaseB)(uint8_t edge);
 static void (*listenerPhaseC)(uint8_t edge);
 
 // adc new measurement data available listeners
-static void (*listener_shuntB_hallA_meas)(void);
-static void (*listener_shuntA_hallB_meas)(void);
-
-// adc last datas
-uint32_t last_ShuntA_HallB_ADCValue = 0;
-uint32_t last_ShuntB_HallA_ADCValue = 0;
+static void (*listener_hallA_meas)(void);
+static void (*listener_hallB_meas)(void);
 
 volatile uint32_t last_userIn_ADCValue = 0;
 volatile uint32_t last_mainPower_ADCValue = 0;
 volatile uint8_t newData_userIn_ADCValue_flag = 0;
 volatile uint8_t newData_mainPower_ADCValue_flag = 0;
+
+volatile uint8_t flag_hallA_ADC_isRunning = 0;
+volatile uint8_t flag_hallB_ADC_isRunning = 0;
 
 // spi last datas
 static uint16_t statusRegister1;
@@ -70,8 +69,8 @@ static uint32_t delayTimeInUs = 0;
 static uint32_t elapsedTimeInUs = 0;
 static uint32_t deltaSystimeInUs = 0;
 
-void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
-		ADC_HandleTypeDef *pShuntB_hallA_ADC_handle_param,
+void initBLDCDriver(ADC_HandleTypeDef *pHallB_ADC_handle_param,
+		ADC_HandleTypeDef *pHallA_ADC_handle_param,
 		ADC_HandleTypeDef *pUser_ADC_handle_param,
 		ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle_param,
 
@@ -85,8 +84,8 @@ void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
 		TIM_HandleTypeDef *pEncoder_Counter_handle_param,
 		SPI_HandleTypeDef *pSPI_handle_param,
 		UART_HandleTypeDef *pUART_handle_param) {
-	pShuntA_hallB_ADC_handle = pShuntA_hallB_ADC_handle_param;
-	pShuntB_hallA_ADC_handle = pShuntB_hallA_ADC_handle_param;
+	pHallB_ADC_handle = pHallB_ADC_handle_param;
+	pHallA_ADC_handle = pHallA_ADC_handle_param;
 	pUser_ADC_handle = pUser_ADC_handle_param;
 	pMainVoltage_EncoderPoti_ADC_handle =
 			pMainVoltage_EncoderPoti_ADC_handle_param;
@@ -272,59 +271,38 @@ uint8_t read_signal_compC() {
 
 //========================= ADC ==============================
 void initAnalog() {
-	/*switch_PowerLED(1);
 
-	 switch (HAL_ADC_GetState(pShuntA_hallB_ADC_handle)) {
-	 case HAL_ADC_STATE_READY:
-	 switch_StatusLED1(1);
-	 break;
-	 case HAL_ADC_STATE_ERROR_INTERNAL:
-	 switch_StatusLED2(1);
-	 break;
-	 case HAL_ADC_STATE_RESET:
-	 switch_StatusLED3(1);
-	 break;
-	 default:
-	 switch_StatusLED4(1);
-	 break;
-	 }*/
 }
 
-void registerListener_newMeasData_hallA_shuntB(void (*listener)(void)) {
-	listener_shuntA_hallB_meas = listener;
+void registerListener_newMeasData_hallA(void (*listener)(void)) {
+	listener_hallA_meas = listener;
 }
-void registerListener_newMeasData_hallB_shuntA(void (*listener)(void)) {
-	listener_shuntB_hallA_meas = listener;
-}
-
-// shunt
-int8_t start_phaseACurrentMeas_shunt() {
-	return 0;
-}
-int8_t start_phaseBCurrentMeas_shunt() {
-	return 0;
-}
-
-uint32_t getLastMeas_phaseACurrentMeas_shunt() {
-	return 0;
-}
-uint32_t getLastMeas_phaseBCurrentMeas_shunt() {
-	return 0;
+void registerListener_newMeasData_hallB(void (*listener)(void)) {
+	listener_hallB_meas = listener;
 }
 
 // hall
-int8_t start_phaseACurrentMeas_hall() {
-	return 0;
-}
-int8_t start_phaseBCurrentMeas_hall() {
-	return 0;
-}
+int8_t start_phaseACurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer) {
+	if(flag_hallA_ADC_isRunning){
+		return ADC_ERROR;
+	}
 
-uint32_t getLastMeas_phaseACurrentMeas_hall() {
-	return 0;
+	flag_hallA_ADC_isRunning = 1;
+	HAL_ADC_Start_DMA(pHallA_ADC_handle, pBuffer, nr_measurements);
+
+	// https://www.youtube.com/watch?v=ts5SEoTg2oY
+	// https://visualgdb.com/tutorials/arm/stm32/adc/
+	return ADC_MEASUREMENT_STARTED;
 }
-uint32_t getLastMeas_phaseBCurrentMeas_hall() {
-	return 0;
+int8_t start_phaseBCurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer) {
+	if(flag_hallB_ADC_isRunning){
+		return ADC_ERROR;
+	}
+
+	flag_hallB_ADC_isRunning = 1;
+	HAL_ADC_Start_DMA(pHallB_ADC_handle, pBuffer, nr_measurements);
+
+	return ADC_MEASUREMENT_STARTED;
 }
 
 // user voltage in
@@ -367,21 +345,6 @@ uint32_t getLastData_mainVoltageMeas() {
 }
 
 // interrupts
-void hallB_shuntA_adc_interrupt() {
-	last_ShuntA_HallB_ADCValue = HAL_ADC_GetValue(pShuntA_hallB_ADC_handle);
-
-	if (listener_shuntA_hallB_meas != 0) {
-		listener_shuntA_hallB_meas();
-	}
-}
-void hallA_shuntB_adc_interrupt() {
-	last_ShuntB_HallA_ADCValue = HAL_ADC_GetValue(pShuntB_hallA_ADC_handle);
-
-	if (listener_shuntB_hallA_meas != 0) {
-		listener_shuntB_hallA_meas();
-	}
-}
-
 void callback_ADC_mainPower_IRQ() {
 	last_mainPower_ADCValue = (HAL_ADC_GetValue(
 			pMainVoltage_EncoderPoti_ADC_handle) - 940) * 1.35;
@@ -390,6 +353,19 @@ void callback_ADC_mainPower_IRQ() {
 void callback_ADC_userIn_IRQ() {
 	last_userIn_ADCValue = HAL_ADC_GetValue(pUser_ADC_handle);
 	newData_userIn_ADCValue_flag = 1;
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* pADCHandler) {
+	if (pADCHandler == pHallA_ADC_handle && listener_hallA_meas != 0) {
+		flag_hallA_ADC_isRunning = 0;
+		listener_hallA_meas();
+	} else if (pADCHandler == pHallB_ADC_handle && listener_hallB_meas != 0) {
+		flag_hallB_ADC_isRunning = 0;
+		listener_hallB_meas();
+	}
+}
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* pADCHandler) {
+
 }
 
 //========================= DAC ======================================
@@ -507,85 +483,6 @@ void initSystime() {
 uint32_t getSystimeUs() {
 	return __HAL_TIM_GET_COUNTER(pSystemtime_Timer_handle);
 }
-/** Calls the handed function after the handed time
- Parameter:
- time_ us    = time in us. max value: 2¹⁶ * 4 = 262'144us.
- listener    = callback. Called after the handed time.
- */
-void startAfterUs(uint32_t time_us, void (*listener)(void)) {
-	/*switch (HAL_TIM_Base_GetState(pCallback_Timer_handle)) {
-	 case HAL_TIM_STATE_RESET:
-	 transmitStringOverUART(
-	 "TIM in reset state (not yet initialized or disabled)");
-	 break;
-	 case HAL_TIM_STATE_ERROR:
-	 transmitStringOverUART("TIM in error state");
-	 break;
-	 case HAL_TIM_STATE_READY:
-	 transmitStringOverUART(
-	 "TIM in ready state (initialized and ready for use)");
-	 break;
-	 case HAL_TIM_STATE_BUSY:
-	 transmitStringOverUART(
-	 "TIM in busy state (an internal process is ongoing)");
-	 break;
-	 case HAL_TIM_STATE_TIMEOUT:
-	 transmitStringOverUART("TIM in timeout state");
-	 break;
-	 }*/
-
-	if (listener_callback_timer == 0) {
-		listener_callback_timer = listener;
-		delayTimeInUs = time_us;
-		deltaSystimeInUs = getSystimeUs(); // TEMP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-		if (delayTimeInUs > 0xFFFF) {
-			// bigger than the 16bit timer max.
-			elapsedTimeInUs = 0xFFFF;
-			__HAL_TIM_SET_AUTORELOAD(pCallback_Timer_handle, 0xFFFF);
-		} else {
-			elapsedTimeInUs = delayTimeInUs;
-			__HAL_TIM_SET_AUTORELOAD(pCallback_Timer_handle, delayTimeInUs);
-		}
-		__HAL_TIM_SET_COUNTER(pCallback_Timer_handle, 1); // reset timer
-		__HAL_TIM_CLEAR_FLAG(pCallback_Timer_handle, TIM_FLAG_UPDATE); // reset interruptflag
-		HAL_TIM_Base_Start_IT(pCallback_Timer_handle);
-	}
-
-	/*if (listener_callback_timer == 0
-	 && HAL_TIM_Base_GetState(pCallback_Timer_handle) == HAL_TIM_STATE_READY) {
-	 __HAL_TIM_SET_AUTORELOAD(pCallback_Timer_handle, time_us);
-	 HAL_TIM_Base_Start_IT(pCallback_Timer_handle);
-
-	 listener_callback_timer = listener;
-	 transmitStringOverUART("TIM started!");
-	 }*/
-
-	/*switch (HAL_TIM_Base_GetState(pCallback_Timer_handle)) {
-	 case HAL_TIM_STATE_RESET:
-	 transmitStringOverUART(
-	 "TIM in reset state (not yet initialized or disabled)");
-	 break;
-	 case HAL_TIM_STATE_ERROR:
-	 transmitStringOverUART("TIM in error state");
-	 break;
-	 case HAL_TIM_STATE_READY:
-	 transmitStringOverUART(
-	 "TIM in ready state (initialized and ready for use)");
-	 break;
-	 case HAL_TIM_STATE_BUSY:
-	 transmitStringOverUART(
-	 "TIM in busy state (an internal process is ongoing)");
-	 break;
-	 case HAL_TIM_STATE_TIMEOUT:
-	 transmitStringOverUART("TIM in timeout state");
-	 break;
-	 }*/
-}
-
-uint32_t getElapsedTimeInUs() {
-	return __HAL_TIM_GET_COUNTER(pCallback_Timer_handle);
-}
 
 uint8_t delayedCallback_A(uint32_t time_us, void (*listener)(void)) {
 	if (isBusy_delayedCallback_A() != DELAYED_CALLBACK_IS_READY) {
@@ -674,7 +571,7 @@ void abort_delayedCallback_D() {
 	listener_delayed_callback_D = 0;
 }
 
-void waitBLOCKING(uint32_t ms){
+void waitBLOCKING(uint32_t ms) {
 	HAL_Delay(ms);
 }
 
@@ -895,7 +792,7 @@ void disableIRQ_encoderSignalReferencePos() {
 	listener_encoderInReferencePosition = 0;
 }
 
-void registerListener_rotated180Deg(void (*listener)(void)){
+void registerListener_rotated180Deg(void (*listener)(void)) {
 	listener_rotated180Deg = listener;
 }
 
@@ -918,7 +815,7 @@ uint32_t getNrImpulses_encoderSignalA() {
 void resetNrImpulses_encoderSignalA() {
 	__HAL_TIM_SET_COUNTER(pEncoder_Counter_handle, 0); // reset timer
 }
-void setNrImpulses_encoderSignalA(uint16_t nrImpulses){
+void setNrImpulses_encoderSignalA(uint16_t nrImpulses) {
 	__HAL_TIM_SET_COUNTER(pEncoder_Counter_handle, nrImpulses);
 }
 

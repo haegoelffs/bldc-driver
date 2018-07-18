@@ -15,6 +15,8 @@
 // =============== Variables =============================================
 uint8_t mainSwitchState = 0;
 uint8_t stateSwitchState = 0;
+uint8_t calibrateJumperState = 0;
+uint8_t enableEncoderJumperState = 0;
 
 uint32_t userInValue = 0;
 
@@ -61,6 +63,42 @@ void debounceStateSwitch() {
 	}
 }
 
+void debounceCalibrationJumper() {
+	static int8_t cnt = 0;
+
+	if (read_encoderCalibrate()) {
+		cnt++;
+	} else {
+		cnt--;
+	}
+
+	if (cnt <= 0) {
+		cnt = 0;
+		calibrateJumperState = 0;
+	} else if (cnt >= DEBOUNCE_HYSTERESIS) {
+		cnt = DEBOUNCE_HYSTERESIS;
+		calibrateJumperState = 1;
+	}
+}
+
+void debounceEncoderJumper() {
+	static int8_t cnt = 0;
+
+	if (read_encoderEnable()) {
+		cnt++;
+	} else {
+		cnt--;
+	}
+
+	if (cnt <= 0) {
+		cnt = 0;
+		enableEncoderJumperState = 0;
+	} else if (cnt >= DEBOUNCE_HYSTERESIS) {
+		cnt = DEBOUNCE_HYSTERESIS;
+		enableEncoderJumperState = 1;
+	}
+}
+
 void pollAnalogUserInput() {
 	if (isMeasReady_userVolatgeMeas) {
 		userInValue = getLastMeas_userVolatgeMeas();
@@ -94,7 +132,7 @@ void flashNextLED() {
 	led = (led + 1) % 4;
 }
 
-void readOutBridgeDriverPins(){
+void readOutBridgeDriverPins() {
 	// fault report indicator
 	uint8_t nfault = read_NFault_BridgeDriver();
 
@@ -109,13 +147,13 @@ void readOutBridgeDriverPins(){
 	switch_StatusLED3(!pwrgd);
 }
 
-void handle_togglePwrLED(){
+void handle_togglePwrLED() {
 	static uint8_t lastState = 0;
 
 	lastState = !lastState;
 	switch_PowerLED(lastState);
 
-	if(pwrLEDinBlinkingMode){
+	if (pwrLEDinBlinkingMode) {
 		delayedCallback_B(PWR_LED_BLINKING_TIME, &handle_togglePwrLED);
 	}
 }
@@ -124,12 +162,17 @@ void handle_togglePwrLED(){
 void proceedInterfaceService() {
 	debounceMainSwitch();
 	debounceStateSwitch();
+	debounceCalibrationJumper();
+	debounceEncoderJumper();
+
 	pollAnalogUserInput();
 }
 
 void initInterfaceService() {
-
-	start_userVolatgeMeas();
+	uint8_t cnt;
+	for(cnt = 0; cnt<=DEBOUNCE_HYSTERESIS; cnt++){
+		proceedInterfaceService();
+	}
 
 	flashNextLED();
 	waitBLOCKING(100);
@@ -146,16 +189,21 @@ void initInterfaceService() {
 uint8_t getDebouncedMainSwitchState() {
 	return mainSwitchState;
 }
-
 uint8_t getDebouncedStateSwitchState() {
 	return stateSwitchState;
+}
+uint8_t getDebouncedEnableEncoderJumper(){
+	return enableEncoderJumperState;
+}
+uint8_t getDebouncedCalibrateJumper(){
+	return calibrateJumperState;
 }
 
 uint32_t getUserInValue() {
 	return userInValue;
 }
 
-uint32_t getReferencePositionEncoder(){
+uint32_t getReferencePositionEncoder() {
 	uint32_t poti = measAnalog_encoderCalibrationPoti_BLOCKING();
 
 	uint32_t value = poti * 360;
@@ -168,12 +216,16 @@ uint32_t getReferencePositionEncoder(){
 	return value;
 }
 
-void setPowerLED_blinkingMode(){
+int32_t getTorqueSetPoint(){
+	return 100;
+}
+
+void setPowerLED_blinkingMode() {
 	pwrLEDinBlinkingMode = 1;
 	handle_togglePwrLED();
 }
 
-void setPowerLED_continiousMode(){
+void setPowerLED_continiousMode() {
 	pwrLEDinBlinkingMode = 0;
 	switch_PowerLED(1);
 }

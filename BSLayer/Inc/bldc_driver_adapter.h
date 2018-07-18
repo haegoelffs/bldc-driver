@@ -36,6 +36,9 @@ void phaseCComp_interrupt();
 void hallB_shuntA_adc_interrupt();
 void hallA_shuntB_adc_interrupt();
 
+void hallA_dma_new_values();
+void hallB_dma_new_values();
+
 void callbackTimer_interrupt();
 void systime_interrupt();
 
