@@ -229,7 +229,7 @@ void logger_writeBuffered() {
 		if (bufferOut(pRingbuffer, pData) == BUFFER_EMPTY) {
 			return;
 		}
-		transmitCharOverUART((char) *pData);
+		sendByteOverUART((char) *pData);
 	}
 }
 

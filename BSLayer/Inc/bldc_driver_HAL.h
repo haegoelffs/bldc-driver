@@ -9,6 +9,7 @@
 #define INC_BLDC_DRIVER_HAL_H_
 
 #include <stdint.h>
+#include "stm32f3xx_hal.h"
 
 //========================= INTERRUPTS ============================
 void enableIR();
@@ -20,6 +21,8 @@ void initPWM();
 #define MAX_PWM_DUTYCYCLE 1800
 #define MIN_PWM_DUTYCYCLE 0
 void set_PWM_DutyCycle(uint16_t dutyCycle);
+
+void startPWM();
 
 /** Enables the pwm output for the phase A
     Input:
@@ -65,11 +68,6 @@ int8_t start_mainVoltageMeas();
 uint8_t isMeasReady_mainVolatgeMeas();
 uint8_t newDataAvailable_mainVolatgeMeas();
 uint32_t getLastData_mainVoltageMeas();
-
-
-//========================= DAC ======================================
-void enable_virtualGND(uint8_t enable);
-void set_virtualGNDValue(uint32_t value);
 
 //========================= COMPERATORS ==============================
 void initComp();
@@ -136,10 +134,6 @@ uint8_t read_PWRGD_BridgeDriver();
 
 // leds
 void switch_PowerLED(uint8_t state);
-void switch_StatusLED1(uint8_t state);
-void switch_StatusLED2(uint8_t state);
-void switch_StatusLED3(uint8_t state);
-void switch_StatusLED4(uint8_t state);
 
 //========================= SYSTIME ===================================
 void initSystime();
@@ -168,8 +162,7 @@ void waitBLOCKING(uint32_t ms);
 
 //========================= UART ===================================
 void initUART();
-void transmitCharOverUART(char data);
-void transmitStringOverUART(char *msg);
+void sendByteOverUART(uint8_t data);
 
 //========================= SPI ===================================
 // Bridge Driver:

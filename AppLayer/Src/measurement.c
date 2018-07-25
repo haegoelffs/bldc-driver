@@ -171,11 +171,9 @@ void handle_sectionEnds(uint8_t section, uint8_t nextSection) {
 	switch (section) {
 	case SECTION_0_ACTIVE:
 		classifyMeasurement(PHASE_B, ZERO_CROSSING_SIGNAL_HIGH);
-		switch_StatusLED1(1);
 		break;
 	case SECTION_1_ACTIVE:
 		classifyMeasurement(PHASE_A, ZERO_CROSSING_SIGNAL_LOW);
-		switch_StatusLED1(0);
 		break;
 	case SECTION_2_ACTIVE:
 		classifyMeasurement(PHASE_C, ZERO_CROSSING_SIGNAL_HIGH);

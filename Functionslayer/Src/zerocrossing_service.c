@@ -94,12 +94,10 @@ void handle_comparator_A(volatile uint8_t edge) {
 
 }
 void handle_delayedCallback_A(){
-	switch_StatusLED3(1);
 	if(read_signal_compA() == lastEdge_A){
 		// stable signal --> valid zero crossing
 		pListener_zeroCrossing_phaseA(lastEdge_A);
 	}
-	switch_StatusLED3(0);
 }
 
 void handle_comparator_B(volatile uint8_t edge) {

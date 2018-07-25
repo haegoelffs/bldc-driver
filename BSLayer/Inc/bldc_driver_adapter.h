@@ -10,19 +10,18 @@
 
 #include "stm32f3xx_hal.h"
 
-void initBLDCDriver(ADC_HandleTypeDef *pShuntA_hallB_ADC_handle_param,
-		ADC_HandleTypeDef *pShuntB_hallA_ADC_handle_param,
+void initBLDCDriver(
+		ADC_HandleTypeDef *pHallB_ADC_handle_param,
+		ADC_HandleTypeDef *pHallA_ADC_handle_param,
 		ADC_HandleTypeDef *pUser_ADC_handle_param,
 		ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle_param,
 
-		DAC_HandleTypeDef *pVirtZero_DAC_handler_param,
-		TIM_HandleTypeDef *pA_LS_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pB_LS_PWM_handle_param,
-		TIM_HandleTypeDef *pC_LS_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pB_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pCallback_Timer_param,
+		TIM_HandleTypeDef *pPWM_handle_A_param,
+		TIM_HandleTypeDef *pPWM_handle_B_and_C_param,
+
 		TIM_HandleTypeDef *pSystemtime_Timer_param,
 		TIM_HandleTypeDef *pEncoder_Counter_handle_param,
+
 		SPI_HandleTypeDef *pSPI_handle_param,
 		UART_HandleTypeDef *pUART_handle_param);
 
@@ -39,7 +38,6 @@ void hallA_shuntB_adc_interrupt();
 void hallA_dma_new_values();
 void hallB_dma_new_values();
 
-void callbackTimer_interrupt();
 void systime_interrupt();
 
 void callback_ADC_mainPower_IRQ();

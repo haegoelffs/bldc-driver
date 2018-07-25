@@ -106,32 +106,6 @@ void pollAnalogUserInput() {
 	}
 }
 
-void flashNextLED() {
-	static uint8_t led = 0;
-
-	switch_StatusLED1(0);
-	switch_StatusLED2(0);
-	switch_StatusLED3(0);
-	switch_StatusLED4(0);
-
-	switch (led) {
-	case 0:
-		switch_StatusLED1(1);
-		break;
-	case 1:
-		switch_StatusLED2(1);
-		break;
-	case 2:
-		switch_StatusLED3(1);
-		break;
-	case 3:
-		switch_StatusLED4(1);
-		break;
-	}
-
-	led = (led + 1) % 4;
-}
-
 void readOutBridgeDriverPins() {
 	// fault report indicator
 	uint8_t nfault = read_NFault_BridgeDriver();
@@ -141,10 +115,6 @@ void readOutBridgeDriverPins() {
 
 	// buck output voltage is low
 	uint8_t pwrgd = read_PWRGD_BridgeDriver();
-
-	switch_StatusLED1(!nfault);
-	switch_StatusLED2(!noctw);
-	switch_StatusLED3(!pwrgd);
 }
 
 void handle_togglePwrLED() {
@@ -173,17 +143,6 @@ void initInterfaceService() {
 	for(cnt = 0; cnt<=DEBOUNCE_HYSTERESIS; cnt++){
 		proceedInterfaceService();
 	}
-
-	flashNextLED();
-	waitBLOCKING(100);
-	flashNextLED();
-	waitBLOCKING(100);
-	flashNextLED();
-	waitBLOCKING(100);
-	flashNextLED();
-	waitBLOCKING(100);
-
-	switch_StatusLED4(0);
 }
 
 uint8_t getDebouncedMainSwitchState() {

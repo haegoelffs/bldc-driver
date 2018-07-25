@@ -110,21 +110,21 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+
   initBLDCDriver(
-    		  &hadc1,
-    		  &hadc4,
-    		  &hadc3,
-			  &hadc2,
-    		  &hdac1,
-    		  &htim4,
-    		  &htim3,
-    		  &htim8,
-    		  &htim1,
-			  &htim16,
-			  &htim2,
-			  &htim15,
-    		  &hspi1,
-    		  &huart3);
+    		  &hadc1, // hall B ADC
+    		  &hadc4, // hall A ADC
+    		  &hadc3, // user in ADC
+			  &hadc2, // main Voltage & encoder calibration ADC
+
+    		  &htim1, // phase A PWM
+			  &htim8, // phases B and C PWM
+
+			  &htim2, // systime
+			  &htim4, // encoder
+
+    		  &hspi1, // bridgedriver SPI
+    		  &huart3); // UART
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -138,15 +138,17 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI1_Init();
-  MX_TIM8_Init();
   MX_USART3_UART_Init();
+
   MX_ADC1_Init();
   MX_ADC4_Init();
-  MX_TIM2_Init();
   MX_ADC2_Init();
   MX_ADC3_Init();
+
   MX_TIM1_Init();
+  MX_TIM2_Init();
   MX_TIM4_Init();
+  MX_TIM8_Init();
 
   /* USER CODE BEGIN 2 */
   startupBLDCDriver();
@@ -446,15 +448,14 @@ static void MX_SPI1_Init(void)
 /* TIM1 init function */
 static void MX_TIM1_Init(void)
 {
-
   TIM_MasterConfigTypeDef sMasterConfig;
   TIM_OC_InitTypeDef sConfigOC;
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
 
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED3;
+  htim1.Init.Period = 1800;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -472,7 +473,7 @@ static void MX_TIM1_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 900;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -617,7 +618,7 @@ static void MX_TIM8_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 900;
   if (HAL_TIM_PWM_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -629,7 +630,7 @@ static void MX_TIM8_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 900;
   if (HAL_TIM_PWM_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);

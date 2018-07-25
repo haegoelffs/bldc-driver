@@ -57,7 +57,7 @@ void initDrive() {
 		logData_encoderPos(poti);
 		setReferencePosition(poti);
 
-		//changeState(start_up);
+		changeState(start_up);
 
 
 		startCurrentMeasurement();
@@ -299,11 +299,12 @@ void startup() {
 	initSystime();
 	initAnalog();
 
-	// init services
+	// __init services__
 	initInterfaceService();
 	initZeroCrossingService();
 	initPhaseControllService();
 	initCurrentServiceService();
+
 
 	// init rest of software
 	initDrive();
@@ -313,7 +314,7 @@ void startup() {
 	register_rotorPosMeas_listener_ISR(&inform_newRotorPos,
 			&informRotorTooEarly, &informRotorTooLate);
 
-
+	setPowerLED_blinkingMode();
 }
 
 void proceed() {
@@ -323,14 +324,14 @@ void proceed() {
 	}
 
 	// proceed all services
-	proceedInterfaceService();
+	/*proceedInterfaceService();
 
 	switch (activeState) {
 	case off: {
 		int32_t torqueSP = getTorqueSetPoint();
 
 		if (torqueSP > 0) {
-			//changeState(start_up);
+			changeState(start_up);
 		} else if (torqueSP < 0) {
 
 		}
@@ -364,7 +365,7 @@ void proceed() {
 		setReferencePosition(poti);
 	}
 		break;
-	}
+	}*/
 
-	logger_writeBuffered();
+	//logger_writeBuffered();
 }

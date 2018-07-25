@@ -18,13 +18,10 @@ static ADC_HandleTypeDef *pHallA_ADC_handle;
 static ADC_HandleTypeDef *pUser_ADC_handle;
 static ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle;
 
-static DAC_HandleTypeDef *pVirtZero_DAC_handler;
+// pwm
+static TIM_HandleTypeDef *pPWM_handle_A;
+static TIM_HandleTypeDef *pPWM_handle_B_and_C;
 
-static TIM_HandleTypeDef *pA_LS_HS_PWM_handle;
-static TIM_HandleTypeDef *pB_LS_PWM_handle;
-static TIM_HandleTypeDef *pC_LS_HS_PWM_handle;
-static TIM_HandleTypeDef *pB_HS_PWM_handle;
-static TIM_HandleTypeDef *pCallback_Timer_handle;
 static TIM_HandleTypeDef *pSystemtime_Timer_handle;
 static TIM_HandleTypeDef *pEncoder_Counter_handle;
 
@@ -59,44 +56,35 @@ static uint16_t statusRegister1;
 static uint16_t statusRegister2;
 
 // timer callbacks
-static void (*listener_callback_timer)(void);
 static void (*listener_delayed_callback_A)(void);
 static void (*listener_delayed_callback_B)(void);
 static void (*listener_delayed_callback_C)(void);
 static void (*listener_delayed_callback_D)(void);
 
-static uint32_t delayTimeInUs = 0;
-static uint32_t elapsedTimeInUs = 0;
-static uint32_t deltaSystimeInUs = 0;
-
-void initBLDCDriver(ADC_HandleTypeDef *pHallB_ADC_handle_param,
+void initBLDCDriver(
+		ADC_HandleTypeDef *pHallB_ADC_handle_param,
 		ADC_HandleTypeDef *pHallA_ADC_handle_param,
 		ADC_HandleTypeDef *pUser_ADC_handle_param,
 		ADC_HandleTypeDef *pMainVoltage_EncoderPoti_ADC_handle_param,
 
-		DAC_HandleTypeDef *pVirtZero_DAC_handler_param,
-		TIM_HandleTypeDef *pA_LS_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pB_LS_PWM_handle_param,
-		TIM_HandleTypeDef *pC_LS_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pB_HS_PWM_handle_param,
-		TIM_HandleTypeDef *pCallback_Timer_param,
+		TIM_HandleTypeDef *pPWM_handle_A_param,
+		TIM_HandleTypeDef *pPWM_handle_B_and_C_param,
+
 		TIM_HandleTypeDef *pSystemtime_Timer_param,
 		TIM_HandleTypeDef *pEncoder_Counter_handle_param,
+
 		SPI_HandleTypeDef *pSPI_handle_param,
-		UART_HandleTypeDef *pUART_handle_param) {
+		UART_HandleTypeDef *pUART_handle_param){
+
 	pHallB_ADC_handle = pHallB_ADC_handle_param;
 	pHallA_ADC_handle = pHallA_ADC_handle_param;
 	pUser_ADC_handle = pUser_ADC_handle_param;
 	pMainVoltage_EncoderPoti_ADC_handle =
 			pMainVoltage_EncoderPoti_ADC_handle_param;
 
-	pVirtZero_DAC_handler = pVirtZero_DAC_handler_param;
+	pPWM_handle_A = pPWM_handle_A_param;
+	pPWM_handle_B_and_C = pPWM_handle_B_and_C_param;
 
-	pA_LS_HS_PWM_handle = pA_LS_HS_PWM_handle_param;
-	pB_LS_PWM_handle = pB_LS_PWM_handle_param;
-	pC_LS_HS_PWM_handle = pC_LS_HS_PWM_handle_param;
-	pB_HS_PWM_handle = pB_HS_PWM_handle_param;
-	pCallback_Timer_handle = pCallback_Timer_param;
 	pSystemtime_Timer_handle = pSystemtime_Timer_param;
 	pEncoder_Counter_handle = pEncoder_Counter_handle_param;
 
@@ -118,18 +106,6 @@ void initGPIOs() {
 // led's
 void switch_PowerLED(uint8_t state) {
 	HAL_GPIO_WritePin(DO_LED_1_GPIO_Port, DO_LED_1_Pin, state);
-}
-void switch_StatusLED1(uint8_t state) {
-	HAL_GPIO_WritePin(DO_LED_2_GPIO_Port, DO_LED_2_Pin, state);
-}
-void switch_StatusLED2(uint8_t state) {
-	HAL_GPIO_WritePin(DO_LED_3_GPIO_Port, DO_LED_3_Pin, state);
-}
-void switch_StatusLED3(uint8_t state) {
-	HAL_GPIO_WritePin(DO_LED_4_GPIO_Port, DO_LED_4_Pin, state);
-}
-void switch_StatusLED4(uint8_t state) {
-	HAL_GPIO_WritePin(DO_LED_5_GPIO_Port, DO_LED_5_Pin, state);
 }
 
 // bridge driver
@@ -155,53 +131,15 @@ uint8_t read_StateButton() {
 }
 
 uint8_t read_MainButton() {
-	return 1;
+	return HAL_GPIO_ReadPin(DI_ENABLE_PRINT_GPIO_Port, DI_ENABLE_PRINT_Pin);
 }
 
 //========================= UART ===================================
 void initUART() {
-	/*switch_PowerLED(1);
 
-	 switch (HAL_UART_GetState(pUART_handle)) {
-	 case HAL_UART_STATE_READY:
-	 switch_StatusLED1(1);
-	 break;
-	 case HAL_UART_STATE_ERROR:
-	 switch_StatusLED2(1);
-	 break;
-	 case HAL_UART_STATE_RESET:
-	 switch_StatusLED3(1);
-	 break;
-	 default:
-	 switch_StatusLED4(1);
-	 break;
-	 }*/
-
-	/*uint8_t aTxBuffer[] = "Hello";
-	 if(HAL_UART_Transmit(&uart_handle, (uint8_t*)aTxBuffer, 5, 5000)!= HAL_OK)
-	 {
-	 switch_PowerLED(0);
-	 }*/
 }
 
-void transmitStringOverUART(char *pMsg) {
-	// find lenght of string (zero terminated)
-	uint8_t *pTemp = pMsg;
-	uint8_t cnt = 0;
-	while (1) {
-		if (*pTemp == 0 || cnt >= 255) {
-			// end of string
-			break;
-		} else {
-			// count up pointer to next string element
-			pTemp++;
-			cnt++;
-		}
-	}
-
-	HAL_UART_Transmit(pUART_handle, pMsg, cnt, 100);
-}
-void transmitCharOverUART(char data) {
+void sendByteOverUART(uint8_t data) {
 	HAL_UART_Transmit(pUART_handle, &data, 1, 100);
 }
 
@@ -242,11 +180,9 @@ void enableCompC(uint8_t enable) {
 }
 
 void phaseAComp_interrupt() {
-	switch_StatusLED4(1);
 	if (listenerPhaseA != 0) {
 		listenerPhaseA(read_signal_compA());
 	}
-	switch_StatusLED4(0);
 }
 void phaseBComp_interrupt() {
 	if (listenerPhaseB != 0) {
@@ -283,7 +219,7 @@ void registerListener_newMeasData_hallB(void (*listener)(void)) {
 
 // hall
 int8_t start_phaseACurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer) {
-	if(flag_hallA_ADC_isRunning){
+	if (flag_hallA_ADC_isRunning) {
 		return ADC_ERROR;
 	}
 
@@ -295,7 +231,7 @@ int8_t start_phaseACurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer)
 	return ADC_MEASUREMENT_STARTED;
 }
 int8_t start_phaseBCurrentMeas_hall(uint32_t nr_measurements, uint32_t *pBuffer) {
-	if(flag_hallB_ADC_isRunning){
+	if (flag_hallB_ADC_isRunning) {
 		return ADC_ERROR;
 	}
 
@@ -368,96 +304,61 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* pADCHandler) {
 
 }
 
-//========================= DAC ======================================
-void enable_virtualGND(uint8_t enable) {
-	if (enable) {
-		HAL_DAC_Start(pVirtZero_DAC_handler, DAC_virtual_GND_channel);
-	} else {
-		HAL_DAC_Stop(pVirtZero_DAC_handler, DAC_virtual_GND_channel);
-	}
-
-}
-void set_virtualGNDValue(uint32_t value) {
-	HAL_DAC_SetValue(pVirtZero_DAC_handler, DAC_virtual_GND_channel,
-	DAC_ALIGN_12B_R, value);
-}
-
 //========================= PWM ===================================
-//sudo picocom --baud 9600  --parity n --databits 8 --flow n -l /dev/ttyUSB0
 void initPWM() {
-	HAL_TIM_StateTypeDef temp = HAL_TIM_PWM_GetState(pC_LS_HS_PWM_handle);
-	switch (temp) {
-	case HAL_TIM_STATE_RESET:
-		transmitStringOverUART(
-				"TIM in reset state (not yet initialized or disabled)");
-		break;
-	case HAL_TIM_STATE_ERROR:
-		transmitStringOverUART("TIM in error state");
-		break;
-	case HAL_TIM_STATE_READY:
-		transmitStringOverUART(
-				"TIM in ready state (initialized and ready for use)");
-		break;
-	case HAL_TIM_STATE_BUSY:
-		transmitStringOverUART(
-				"TIM in busy state (an internal process is ongoing)");
-		break;
-	case HAL_TIM_STATE_TIMEOUT:
-		transmitStringOverUART("TIM in timeout state");
-		break;
-	}
-
+	HAL_TIM_Base_Start(pPWM_handle_A);
+	HAL_TIM_Base_Start(pPWM_handle_B_and_C);
 }
 
 void set_PWM_DutyCycle(uint16_t dutyCycle) {
-	__HAL_TIM_SET_COMPARE(pA_LS_HS_PWM_handle, PWM_A_HS_channel, dutyCycle);
-	__HAL_TIM_SET_COMPARE(pA_LS_HS_PWM_handle, PWM_A_LS_channel, dutyCycle);
-	__HAL_TIM_SET_COMPARE(pB_HS_PWM_handle, PWM_B_HS_channel, dutyCycle);
-	__HAL_TIM_SET_COMPARE(pB_LS_PWM_handle, PWM_B_LS_channel, dutyCycle);
-	__HAL_TIM_SET_COMPARE(pC_LS_HS_PWM_handle, PWM_C_HS_channel, dutyCycle);
-	__HAL_TIM_SET_COMPARE(pC_LS_HS_PWM_handle, PWM_C_LS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_A, PWM_A_HS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_A, PWM_A_LS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_B_and_C, PWM_B_HS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_B_and_C, PWM_B_LS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_B_and_C, PWM_C_HS_channel, dutyCycle);
+	__HAL_TIM_SET_COMPARE(pPWM_handle_B_and_C, PWM_C_LS_channel, dutyCycle);
 }
 
 void enable_PWM_phaseA_HS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pA_LS_HS_PWM_handle, PWM_A_HS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_A, PWM_A_HS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pA_LS_HS_PWM_handle, PWM_A_HS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_A, PWM_A_HS_channel);
 	}
 }
 void enable_PWM_phaseB_HS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pB_HS_PWM_handle, PWM_B_HS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_B_and_C, PWM_B_HS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pB_HS_PWM_handle, PWM_B_HS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_B_and_C, PWM_B_HS_channel);
 	}
 }
 void enable_PWM_phaseC_HS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pC_LS_HS_PWM_handle, PWM_C_HS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_B_and_C, PWM_C_HS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pC_LS_HS_PWM_handle, PWM_C_HS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_B_and_C, PWM_C_HS_channel);
 	}
 }
 void enable_PWM_phaseA_LS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pA_LS_HS_PWM_handle, PWM_A_LS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_A, PWM_A_LS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pA_LS_HS_PWM_handle, PWM_A_LS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_A, PWM_A_LS_channel);
 	}
 }
 void enable_PWM_phaseB_LS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pB_LS_PWM_handle, PWM_B_LS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_B_and_C, PWM_B_LS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pB_LS_PWM_handle, PWM_B_LS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_B_and_C, PWM_B_LS_channel);
 	}
 }
 void enable_PWM_phaseC_LS(uint8_t enable) {
 	if (enable) {
-		HAL_TIM_PWM_Start(pC_LS_HS_PWM_handle, PWM_C_LS_channel);
+		HAL_TIM_PWM_Start(pPWM_handle_B_and_C, PWM_C_LS_channel);
 	} else {
-		HAL_TIM_PWM_Stop(pC_LS_HS_PWM_handle, PWM_C_LS_channel);
+		HAL_TIM_PWM_Stop(pPWM_handle_B_and_C, PWM_C_LS_channel);
 	}
 }
 
@@ -576,38 +477,6 @@ void waitBLOCKING(uint32_t ms) {
 }
 
 // callbacks adapter
-void callbackTimer_interrupt() {
-	if (listener_callback_timer != 0) {
-		// registered listener = valid interrupt
-		HAL_TIM_Base_Stop_IT(pCallback_Timer_handle);
-		__HAL_TIM_SET_COUNTER(pCallback_Timer_handle, 1); // reset timer
-
-		deltaSystimeInUs = getSystimeUs() - deltaSystimeInUs; // TEMP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-		if (elapsedTimeInUs >= delayTimeInUs) {
-			// enough time elapsed, call the callback
-			void (*temp)(void);
-			temp = listener_callback_timer;
-			listener_callback_timer = 0;
-
-			temp();
-		} else {
-			// NOT enough time colapsed, update timer
-			uint32_t deltaTimeInUs = elapsedTimeInUs - delayTimeInUs;
-			if (deltaTimeInUs > 0xFFFF) {
-				// bigger than the 16bit timer max.
-				elapsedTimeInUs += 0xFFFF;
-				__HAL_TIM_SET_AUTORELOAD(pCallback_Timer_handle, 0xFFFF);
-			} else {
-				elapsedTimeInUs += deltaTimeInUs;
-				__HAL_TIM_SET_AUTORELOAD(pCallback_Timer_handle, deltaTimeInUs);
-			}
-
-			HAL_TIM_Base_Start_IT(pCallback_Timer_handle);
-		}
-	}
-}
-
 void systime_interrupt() {
 	if (__HAL_TIM_GET_FLAG(pSystemtime_Timer_handle,
 			DELAYED_CALLBACK_A_ir_flag)) {

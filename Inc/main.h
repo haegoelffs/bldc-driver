@@ -134,14 +134,12 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
-#define PWM_A_HS_channel TIM_CHANNEL_1 // TIM4
-#define PWM_B_HS_channel TIM_CHANNEL_4 // TIM1
-#define PWM_C_HS_channel TIM_CHANNEL_1 // TIM8
-#define PWM_A_LS_channel TIM_CHANNEL_2 // TIM4
-#define PWM_B_LS_channel TIM_CHANNEL_2	// TIM3
-#define PWM_C_LS_channel TIM_CHANNEL_3 // TIM8
-
-#define DAC_virtual_GND_channel DAC_CHANNEL_1
+#define PWM_A_LS_channel TIM_CHANNEL_1 // TIM1
+#define PWM_A_HS_channel TIM_CHANNEL_2 // TIM1
+#define PWM_B_LS_channel TIM_CHANNEL_3	// TIM8
+#define PWM_B_HS_channel TIM_CHANNEL_4 // TIM8
+#define PWM_C_LS_channel TIM_CHANNEL_1 // TIM8
+#define PWM_C_HS_channel TIM_CHANNEL_2 // TIM8
 
 #define DELAYED_CALLBACK_A_channel TIM_CHANNEL_1 // TIM2
 #define DELAYED_CALLBACK_B_channel TIM_CHANNEL_2 // TIM2
